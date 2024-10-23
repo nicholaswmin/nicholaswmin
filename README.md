@@ -1,6 +1,7 @@
-# nicholaswmin
+# pop
 
-> a blog and a blogger written in Ruby, adapted by [wruby][wruby]
+> a microblogging framework written in Ruby, 
+> heavily adapted by [wruby][wruby]
 
 ## blogging
 
