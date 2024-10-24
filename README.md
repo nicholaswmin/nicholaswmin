@@ -23,7 +23,6 @@ Download `nix.rb`, drop it in a folder, and:
 > generate a sample blog
 
 ```bash
-# or nix -i
 ruby nix.rb --init
 ```
 
