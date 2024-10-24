@@ -7,9 +7,7 @@
 
 ## install
 
-This framework is a single-file, `nix.rb`.
-
-You just need [Ruby v3.3+][ruby].
+It's just a single-file, `nix.rb`. You just need [ruby][ruby].
 
 > in case you don't have it:
 
@@ -89,6 +87,12 @@ fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd --
 
 Written for testability, in [*idiomatic Ruby*][id-ruby].
 
+## Conventions
+
+- Produces [Semantic HTML][semantic-html] & the [ARIA specs][aria]
+- Designed for testability, written in [*idiomatic Ruby*][id-ruby].
+- Follows a [suckless philosophy][suckless]
+
 ## License
 
 [The MIT License](https://spdx.org/licenses/MIT)
@@ -101,3 +105,7 @@ Written for testability, in [*idiomatic Ruby*][id-ruby].
 [fswatch]: https://github.com/emcrisostomo/fswatch
 [gfm]: https://github.github.com/gfm/
 [id-ruby]: https://franzejr.github.io/best-ruby/idiomatic_ruby/conditional_assignment.html
+
+[suckless]: https://suckless.org/philosophy/
+[semantic-html]: https://html.spec.whatwg.org/multipage/#toc-dom
+[aria]: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA
