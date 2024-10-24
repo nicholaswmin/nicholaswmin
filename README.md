@@ -1,7 +1,7 @@
 # pop
 
-> a microblogging framework written in Ruby, 
-> heavily adapted by [wruby][wruby]
+> a microblogging framework written in idiomatic OOP Ruby, 
+> inspired by [wruby][wruby]
 
 ## blogging
 
