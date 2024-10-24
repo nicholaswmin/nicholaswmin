@@ -1,9 +1,12 @@
-# pop
+# nix   
 
-> a [hyper minimal][concise] blogging framework written in Ruby,
-> inspired by Bradley Taunt's [wruby][wruby] & the [1kb club][1kb]
+> [WIP]
+>
+> [hyper minimal][concise] blogging framwork written in Ruby,   
+> inspired by Bradley Taunt's [wruby][wruby] & the [1kb club][club]
 >
 > `nix` means *nothing* in rejective form.
+
 
 ## install
 
@@ -30,19 +33,16 @@ In case you don't have [ruby][ruby]:
 brew install ruby
 ```
 
-Download `nix.rb`, drop it in a folder, and:
+Download `nix.rb`, drop it in a folder, then:
 
-> generate a sample blog
+> generate sample blog:
 
 ```bash
-# or nix -i
 ruby nix.rb --init
 ```
 
-> rebuild blog 
+> build:
 
-```bash
-# or nix -i
 ruby nix.rb --init
 ```
 
@@ -51,6 +51,8 @@ builds all `HTML` in `build/`.
 ## usage 
 
 It's like [Jekyll][jekyll]. You write [Github-flavored Markdown][gfm].
+
+> inc. syntax highlighting for 150 languages via [`pygments`][pygments]
 
 - Add posts in `posts/`
 - Add pages in `pages/`
@@ -79,9 +81,9 @@ The Elements of Style by William Strunk Jr (1918) ...
 
 additionally:
 
-- add any media (images/video) in `public/`.
-- css styles are in `public/style.css`
-- site options are in `_config.rb`
+- images go in `public/`.
+- css are in `public/style.css`
+- config site via `_config.rb`
 
 ## build
 
@@ -129,6 +131,7 @@ Written for testability, in [*idiomatic Ruby*][id-ruby].
 [fswatch]: https://github.com/emcrisostomo/fswatch
 [gfm]: https://github.github.com/gfm/
 [id-ruby]: https://franzejr.github.io/best-ruby/idiomatic_ruby/conditional_assignment.html
+[pygments]: https://pygments.org/
 
 [suckless]: https://suckless.org/philosophy/
 [semantic-html]: https://html.spec.whatwg.org/multipage/#toc-dom
