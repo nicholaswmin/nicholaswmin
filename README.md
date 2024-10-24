@@ -46,10 +46,10 @@ outputs all `HTML` in `/build`.
 
 `git push` all changes 
 
-- Visit `Repository` > `Settings` > `Pages`
-- Click `Enable` on branch `main` and folder `build/`
+1. Visit `Repository` > `Settings` > `Pages`
+2. `Enable` on branch: `main`, folder: `build/`
 
-visit: `<username>.github.io/<repo>`
+and visit: [`https://<username>.github.io/<repo>`](https://<username>.github.io/<repo>)
 
 ```bash
 brew install ruby
