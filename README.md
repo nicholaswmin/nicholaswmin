@@ -10,7 +10,7 @@
 
 ## install
 
-It's just a single-file, `nix.rb`. You just need [ruby][ruby].
+It's just a single file, `nix.rb`. You just need [ruby][ruby].
 
 > in case you don't have it:
 
@@ -24,12 +24,14 @@ Download `nix.rb`, drop it in a folder, and:
 
 ```bash
 # or nix -i
-nix --init
+ruby nix.rb --init
 ```
 
 ## usage 
 
 It's like [Jekyll][jekyll]. You write [Github-flavored Markdown][gfm]
+
+> inc. syntax highlighting for 150 languages via [`pygments`][pygments]
 
 - Add posts in `posts/`
 - Add pages in `pages/`
@@ -58,9 +60,9 @@ The Elements of Style by William Strunk Jr (1918) ...
 
 additionally:
 
-- add any media (images/video) in `public/`.
-- css styles are in `public/style.css`
-- site options are in `_config.rb`
+- images go in `public/`.
+- css are in `public/style.css`
+- config site via `_config.rb`
 
 ## build
 
@@ -108,6 +110,7 @@ Written for testability, in [*idiomatic Ruby*][id-ruby].
 [fswatch]: https://github.com/emcrisostomo/fswatch
 [gfm]: https://github.github.com/gfm/
 [id-ruby]: https://franzejr.github.io/best-ruby/idiomatic_ruby/conditional_assignment.html
+[pygments]: https://pygments.org/
 
 [suckless]: https://suckless.org/philosophy/
 [semantic-html]: https://html.spec.whatwg.org/multipage/#toc-dom
