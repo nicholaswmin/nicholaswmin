@@ -1,5 +1,7 @@
 # nix   
-> WIP
+
+> [WIP]
+>
 > a [hyper minimal][concise] blogging framwork written in Ruby.
 > 
 > inspired by Bradley Taunt's [wruby][wruby] & the [1kb club][club]
