@@ -13,13 +13,14 @@
 It's a single-file, `nix.rb`.     
 Download [nix.rb][file-rb], drop it in a folder, and:
 
+> creates a sample blog:
+
 ```bash
 # or nix -i
 ruby nix.rb --init
 ```
 
-creates a sample blog.
-Add posts as [gfm markdown][gfm] in `/posts` and:
+> add posts as [gfm markdown][gfm] in `posts/`, and:
 
 ```bash
 ruby nix.rb
@@ -27,27 +28,11 @@ ruby nix.rb
 
 outputs all `HTML` in `/build`.
 
-In case you don't have [ruby][ruby]:
+in case you don't have [ruby][ruby]:
 
 ```bash
 brew install ruby
 ```
-
-Download `nix.rb`, drop it in a folder, then:
-
-> generate sample blog:
-
-```bash
-ruby nix.rb --init
-```
-
-> build:
-
-```bash
-ruby nix.rb --init
-```
-
-builds all `HTML` in `build/`.
 
 ## usage 
 
@@ -58,13 +43,13 @@ It's like [Jekyll][jekyll]. You write [Github-flavored Markdown][gfm].
 - Add posts in `posts/`
 - Add pages in `pages/`
 
-They *must* have an:
+ ... each *must* have an:
 
 - `# <post-title>` on the 1st line
 - `empty line` on the 2nd
 - `<date>` on the 3rd, ie. `2024-10-18`
 
-Example post (or page):
+... an example:
 
 ```markdown
 # Lorem Ipsum
@@ -98,7 +83,7 @@ outputs all in `build/`.
 
 ### Rebuild on file change
 
-> Tired of pressing `save` on every change?
+> tired of pressing `save` on every change?
 
 Grab [`fswatch`][fswatch]:
 
