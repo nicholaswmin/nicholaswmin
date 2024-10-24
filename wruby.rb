@@ -42,27 +42,6 @@ puts "\033[34m\ngems installed and loaded\n\e[0m"
 
 # ------------- Content Functions ---------------
 
-# Replace the title meta tag in the header.html
-def replace_title(header, title)
-  header.gsub('<title>{{TITLE}}</title>', "<title>#{title}</title>")
-end
-
-# Replace the bytes placeholder
-def replace_bytes(html)
-  html.gsub('{{BYTES}}', html.split.join.bytesize.to_s)
-end
-
-# Replace the favicon in header.html
-def replace_favicon(html, favicon)
-  html.gsub('{{FAVICON}}', favicon)
-end
-
-# Grab the title from each markdown file
-def extract_title_from_md(lines, p)
-  first_line = lines.first
-  lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
-end
-
 def add_main_css_class(html, css_class)
   html.insert(html.index('<main>') + 5, ' class="' + css_class + '"')
 end
@@ -86,78 +65,6 @@ def verify_post_format (input_dir)
       STDERR.puts "\033[1;33mWarn: 3rd line needs a date\e[0m#{err_f}\n"
     end
   end
-end
-
-
-
-# @todo class?
-def create_markdown(md)
-  lines = md.lines
-  first = lines.first
-  title = first&.start_with?('# ') ? first[2..-1].strip : 'Blog Index'
-  date  = Date.parse(lines[2]&.strip || '') rescue Date.today
-  year  = date.strftime("%b, %Y")
-  html  = markdown_to_html(md)
-
-  { title: title, date: date, year: year, html: html } 
-end
-
-def replace_placeholder (placeholder, replacement)
-  html.gsub(placeholder, replacement)
-end
-
-# Convert markdown files
-def process_md_files(input_dir, header, footer, favicon)
-  threads = []
-  items = []
-
-  Find.find(input_dir) do |path|
-    next unless path =~ /\.md\z/
-
-    threads << Thread.new {
-      md_content = File.read(path)
-      lines = md_content.lines
-  
-      title = lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
-
-      date = Date.parse(lines[2]&.strip || '') rescue Date.today
-      year = date.strftime("%b, %Y")
-
-      header = replace_title(replace_favicon(header, favicon), title)
-      html = replace_bytes(header + markdown_to_html(md_content) + footer)
-      path = path.sub(input_dir + '/', '').sub('.md', '')
-
-      items << { 
-        title: title, 
-        date: date, 
-        year: year, 
-        link: path + '/', 
-        path: path,
-        html: html 
-      } 
-    }
-    
-    threads.each { |thr| thr.join }
-  end
-
-  items
-end
-
-def process_pages(input_dir, output_dir, header, footer, favicon) 
-  pages = process_md_files(input_dir, header, footer, favicon)
-  
-  pages.each { | page | 
-    html = add_main_css_class(page[:html], 'page') 
-
-    item_dir = File.join(output_dir, page[:path])
-    
-    FileUtils.mkdir_p(item_dir)
-    File.write("#{item_dir}/index.html", html)
-  
-    puts "\033[1;36m processed page: #{page[:title]}\e[0m"
-  }
-  
-  pages
 end
 
 def process_posts(input_dir, output_dir, pub_dir, header, footer, favicon)
@@ -231,75 +138,57 @@ def generate_rss(posts, rss_file, author_name, site_name, site_url, posts_dir)
   File.write(rss_file, rss)
 end
 
-class Plainfile
-  def initialize(filename, content)
-      @@filename = filename
-      @content   = markdown_to_html(marktext)
-      @title = extract_title_from_md(marktext.lines)
+class PlainFile
+  def initialize(path)
+    @dir = to_dir_from_path(path)
   end
   
   def to_disk() 
-    { filename: filename, title: title, content: content }
+    { dir: @dir }
   end 
   
-  attr_reader :content, :title, :filename
+  def to_dir_from_path(path)
+    File.join(File.dirname(path), File.basename(path, ".*"))
+  end
+  
+  attr_reader :path, :data
 end
 
-class Markdown < Plainfile
-  def initialize(filename, marktext)
-    @filename = filename
+class Page < PlainFile
+  def initialize(path, marktext)
+    @dir   = to_dir_from_path(path)
+    @data  = markdown_to_html(marktext)
     @title = extract_title_from_md(marktext.lines)
-  
-    date  = Date.parse(marktext.lines[2]&.strip || '') rescue Date.today
-    @highlights  = []
-    @content     = markdown_to_html(marktext)
-    @date        = date
-    @year        = date.strftime("%b, %Y")
   end
   
   def to_disk() 
-    { filename: filename + '.html', content: content, highlights: highlights  }
+    { dir: @dir, title: @title, data: @data  }
   end 
 
   def attach_header(header_html)  
-    @content = replace_header_placeholders(header_html) + @content
+    @data = header_html + @data
     self
    end
 
   def attach_footer(footer_html)
-    @content = @content + replace_bytes(footer_html)
+    @data = @data + footer_html
     self
   end
-  
-  def attach_highlights(paths)
-    highlights = paths.map{ | path | 
-      tag = '<link rel="stylesheet" href="/' + path + '><link>'
-      
-      @content = @content + tag + "\n"
 
-      Rouge::Themes::Github.mode(:light).render(scope: '.highlight')
-    }
+  def replace_title_placeholder()
+    @data = @data.gsub('{{TITLE}}', title)
+    
+   self
+  end
+  
+  def replace_bytes_placeholder()
+    @data = @data.gsub('{{BYTES}}', @data.split.join.bytesize.to_s)
     
     self
   end
   
-  def add_favicon(favicon)
-    @content = @content.gsub('{{FAVICON}}', favicon)
-
-    self
-  end
-  
-  def extract_title_from_md(lines)
-    lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
-  end
-  
-  def replace_header_placeholders(html)
-    @content = @content.gsub('{{TITLE}}', html)
-  end
-  
-  def replace_footer_placeholders()
-    @content = @content.gsub('{{BYTES}}', @content.split.join.bytesize.to_s)
-    
+  def replace_favicon_placeholder(favicon)
+    @data = @data.gsub('{{FAVICON}}', favicon)
     self
   end
   
@@ -309,13 +198,55 @@ class Markdown < Plainfile
       syntax_highlighter: 'rouge'
     }).to_html
   end
-  
-  def log 
-    p content.unicode_normalize
-    p '---'
-  end
 
-  attr_reader :content, :filename, :title, :highlights
+  def extract_title_from_md(lines)
+    lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
+  end
+    
+  attr_reader :dir, :title, :data, :highlights, :date, :year
+end
+
+class Post < Page
+  def initialize(path, marktext)
+    @dir  = to_dir_from_path(path)
+    @title = extract_title_from_md(marktext.lines)
+    @data  = markdown_to_html(marktext)
+    @date  = parse_date(data.lines)
+    @year  = @date.strftime("%b, %Y")
+    
+    @highlights = []
+  end
+  
+  def to_disk() 
+    { dir: @dir, title: @title, data: @data, highlights: @highlights  }
+  end 
+  
+  def attach_highlights(public_dir)
+    tag = '<link rel="stylesheet" href="/' + public_dir + '/highlight.css"><link>'
+    
+    @data = @data + tag + "\n"
+
+    Rouge::Themes::Github.mode(:light).render(scope: '.highlight')
+    
+    self
+  end
+  
+  def parse_date(data)
+    Date.parse(marktext.lines[2]&.strip || '') rescue Date.today
+  end
+  
+  attr_reader :dir, :fname, :data, :highlights, :date, :year
+end
+
+def is_markdown(path) 
+  ['.md'].include? File.extname(path)
+end
+
+def write_page(output_dir, page) 
+  path = File.join(output_dir, page[:dir])
+  File.write("#{path}/index.html", page[:data])
+  
+  puts "wrote: #{path}"
 end
 
 def build(config)
@@ -330,40 +261,29 @@ def build(config)
   #site_name = config['site_name']
   #author_name = config['author_name']
   
+  # ensure the build dirs exist, create them if not
   [dirs['output'], dirs['posts_output']].each { |dir| FileUtils.mkdir_p(dir) }
   
   posts = Find.find(dirs['posts'])
-    .filter { | path | ['.md'].include? File.extname(path) }
-    .map { | path | Markdown.new(File.basename(path, File.extname(path)), File.read(path)) }
-    .map { | markdown | markdown.attach_header(header) }
-    .map { | markdown | markdown.attach_footer(footer) }
-    .map { | markdown | markdown.attach_highlights([dirs['public'] + '/hl.css']) }
-    .map { | markdown | markdown.to_disk() }
-    .each { | writable | 
-      puts "writing to: #{dirs['output']}/#{dirs['posts']}"
-      File.write("#{dirs['output']}/#{dirs['posts']}/#{writable[:filename]}", writable[:content]) 
-    }
+    .filter { | path | is_markdown(path) }
+    .map    { | path | Post.new(path, File.read(path)) }
+    .map    { | post | post.attach_header(header) }
+    .map    { | post | post.attach_footer(footer) }
+    .map    { | post | post.attach_highlights(dirs['public']) }
+    .map    { | post | post.replace_title_placeholder() }
+    .map    { | post | post.replace_bytes_placeholder() }
+    .map    { | post | post.replace_favicon_placeholder(misc['favicon']) }
+    .map    { | post | write_page(dirs['output'], post.to_disk()) }
 
   pages = Find.find(dirs['pages'])
-    .filter { | path | ['.md'].include? File.extname(path) }
-
-  
-  # header = File.read(header_file)
-  # footer = File.read(footer_file)
-
-  # verify_post_format(posts_dir)
-
-  # posts  = process_posts(posts_dir, posts_output_dir, public_dir, header, footer, favicon)
-  #  .sort_by { |post| -post[:date].to_time.to_i }
-  # pages  = process_pages(pages_dir, pages_output_dir, header, footer, favicon)
-
-  # generate_highlight_css(output_dir, public_dir)
-  # generate_index(posts, header, footer, root_index, post_count, output_dir, posts_dir)
-  # generate_rss(posts, rss_file, author_name, site_name, site_url, posts_dir)
-
-  # FileUtils.cp_r(public_dir, output_dir)  
-  
-  # puts "\033[32m\nbuild completed. output: '#{output_dir}/'\n \e[0m"
+    .filter { | path | is_markdown(path) }
+    .map    { | path | Page.new(path, File.read(path)) }
+    .map    { | page | page.attach_header(header) }
+    .map    { | page | page.attach_footer(footer) }
+    .map    { | page | page.replace_title_placeholder() }
+    .map    { | page | page.replace_bytes_placeholder() }
+    .map    { | page | page.replace_favicon_placeholder(misc['favicon']) }
+    .map    { | page | write_page(dirs['output'], page.to_disk()) }
 end
 
 build(YAML.load_file('_config.yml'))
