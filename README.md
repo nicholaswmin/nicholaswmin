@@ -116,7 +116,7 @@ fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd --
 [concise]: https://en.wikipedia.org/wiki/Concision
 [fswatch]: https://github.com/emcrisostomo/fswatch
 [gfm]: https://github.github.com/gfm/
-[id-ruby]: https://franzejr.github.io/best-ruby/idiomatic_ruby/conditional_assignment.html
+[id-ruby]: https://franzejr.github.io/best-ruby/index.html
 [pygments]: https://pygments.org/
 [file-rb]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
 
