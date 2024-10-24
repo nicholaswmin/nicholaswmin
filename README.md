@@ -1,9 +1,10 @@
 # pop
 
-> a [hyper minimal][concise] blogging framework written in Ruby,
+> a [hyper minimal][concise] blogging framwork written in Ruby,
 > inspired by Bradley Taunt's [wruby][wruby] & the [1kb club][1kb]
 >
 > `nix` means *nothing* in rejective form.
+
 
 ## install
 
