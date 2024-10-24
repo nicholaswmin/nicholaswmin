@@ -43,6 +43,7 @@ ruby nix.rb --init
 
 > build:
 
+```bash
 ruby nix.rb --init
 ```
 
