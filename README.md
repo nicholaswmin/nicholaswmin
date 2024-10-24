@@ -119,6 +119,7 @@ fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd --
 [ruby]: https://ruby-doc.org/3.3.4/
 [wruby]: https://git.btxx.org/wruby/about/
 [jekyll]: https://jekyllrb.com/
+[gh-pages]: https://pages.github.com/
 [concise]: https://en.wikipedia.org/wiki/Concision
 [fswatch]: https://github.com/emcrisostomo/fswatch
 [gfm]: https://github.github.com/gfm/
