@@ -8,6 +8,14 @@
 > `nix` means *nothing* in rejective form.
 
 
+- [install](#install)
+- [usage](#usage)
+- [test](#test)
+* [license](#license)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+
 ## install
 
 It's a single-file, `nix.rb`.     
@@ -71,17 +79,7 @@ additionally:
 - css are in `public/style.css`
 - config site via `_config.rb`
 
-## build
-
-just run:
-
-```bash
-ruby nix.rb
-```
-
-outputs all in `build/`.
-
-### Rebuild on file change
+## Rebuild on file change
 
 > tired of pressing `save` on every change?
 
@@ -97,8 +95,6 @@ then run:
 fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd -- build
 ```
 
-Written for testability, in [*idiomatic Ruby*][id-ruby].
-
 ## test
 
 ```bash
@@ -111,7 +107,7 @@ Written for testability, in [*idiomatic Ruby*][id-ruby].
 - designed for testability, written in [*idiomatic Ruby*][id-ruby].
 - [suckless philosophy][suckless]
 
-## License
+## license
 
 [The MIT License](https://spdx.org/licenses/MIT)
 
