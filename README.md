@@ -71,7 +71,7 @@ ruby nix.rb
 
 outputs all in `build/`.
 
-### Automatic rebuild on file change
+### Rebuild on file change
 
 > Tired of pressing `save` on every change?
 
@@ -87,6 +87,12 @@ then run:
 fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd -- build
 ```
 
+Written for testability, in [*idiomatic Ruby*][id-ruby].
+
+## License
+
+[The MIT License](https://spdx.org/licenses/MIT)
+
 [club]: https://1kb.club/
 [ruby]: https://ruby-doc.org/3.3.4/
 [wruby]: https://git.btxx.org/wruby/about/
@@ -94,3 +100,4 @@ fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd --
 [concise]: https://en.wikipedia.org/wiki/Concision
 [fswatch]: https://github.com/emcrisostomo/fswatch
 [gfm]: https://github.github.com/gfm/
+[id-ruby]: https://franzejr.github.io/best-ruby/idiomatic_ruby/conditional_assignment.html
