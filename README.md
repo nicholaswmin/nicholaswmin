@@ -7,9 +7,24 @@
 
 ## install
 
-It's just a single-file, `nix.rb`. You just need [ruby][ruby].
+It's a single-file, `nix.rb`.     
+Download [nix.rb][file], drop it in a folder, and:
 
-> in case you don't have it:
+```bash
+# or nix -i
+ruby nix.rb --init
+```
+
+creates a sample blog.
+Add posts as [gfm markdown][gfm] in `/posts` and:
+
+```bash
+ruby nix.rb
+```
+
+outputs all `HTML` in `/build`.
+
+In case you don't have [ruby][ruby]:
 
 ```bash
 brew install ruby
