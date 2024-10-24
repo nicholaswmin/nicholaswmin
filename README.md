@@ -11,8 +11,7 @@
 - [install](#install)
 - [usage](#usage)
 - [test](#test)
-* [license](#license)
-
+- [license](#license)
 
 ## install
 
