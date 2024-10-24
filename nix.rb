@@ -17,9 +17,6 @@
 # 
 # Check out wruby here: https://git.btxx.org/wruby/tree/
 
-# TODO
-# - https://franzejr.github.io/best-ruby/idiomatic_ruby/each_vs_map.html
-
 require 'bundler/inline'
 
 gemfile do
@@ -57,74 +54,78 @@ puts "\033[34m\ngems installed and loaded\n\e[0m"
 # 
 # The filesystem functions then take those classes 
 # and generate directories/write files out of them.
+# 
+# @TODO
+# - Warning (turn on verbose)
+# - Tests
+# - Problemd
+#  - the page index.html is not markdown
+#  - current classes are `MarkdownPage` and `MarkdownPost`
+#  - I want to have [`MarkdownPage`, `MarkdownPost`, `index.html`] in
+#    and treat them all the same: `all.map(c => c.compile())`
 
 # --- Classes ---
 
-class MarkdownFragment 
-  def initialize(markdown_text)
-    @markdown_text = markdown_text
+class HTMLFragment 
+  def initialize(html)
+    @html = html
   end
   
-  def to_title 
-    lines = @markdown_text.lines
-    lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
-  end
-
-  def to_html()
-    Kramdown::Document.new(@markdown_text, {
-      input: 'GFM', auto_ids: true,
-      syntax_highlighter: 'rouge'
-    })
-    .to_html
-    .gsub('{{TITLE}}', to_title)
+  def compile(tokens)
+    tokens.reduce(@html) { _1.gsub(_2[0], _2[1]) }
   end
 end
 
-class PageList
-  # todo header/footer/root turn into a hash 'fragments'
-  def initialize(header, footer, root, dirs, config)
-    @header = header
-    @footer = footer
-    @root   = root 
+class MarkdownFragment 
+  def initialize(markdown)
+    @markdown = markdown
+  end
+  
+  def to_title 
+    lines = @markdown.lines
+    lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
+  end
 
-    @dirs   = dirs
-    @config = config
+  def compile()
+    HTMLFragment.new(Kramdown::Document.new(@markdown, {
+      input: 'GFM', auto_ids: true,
+      syntax_highlighter: 'rouge'
+    }).compile({ 'title' => to_title }))
+  end
+end
 
+class DocumentList
+  def initialize(config, includes)
+    @config   = config
+    @includes = includes
     @posts = []
     @pages = []
   end
   
   def add_post(path, markdown_text)
-    post = Post.new(path, markdown_text)
-      .attach_header(@header)
-      .attach_footer(@footer)
-      .attach_highlights(@dirs['public'])
-      .replace_bytes_placeholder()
-      .replace_favicon_placeholder(@config[:favicon])
-
-    @posts.push(post)
-    
+    @posts.push(MarkdownPost.new(path, markdown_text)
+      .add_header(@includes['header'])
+      .add_footer(@includes['footer'])
+      .add_styles(@config['output']['public']))
     self
   end
   
   def add_page(path, markdown_text)
-    page = Page.new(path, markdown_text)
-      .attach_header(@header)
-      .attach_footer(@footer)
-      .replace_bytes_placeholder()
-      .replace_favicon_placeholder(@config[:favicon])
-
-    @pages.push(page)
+    @pages.push(MarkdownPage.new(path, markdown_text)
+      .add_header(@includes['header'])
+      .add_footer(@includes['footer']))
 
     self
   end
   
   def generate_index() 
-    list = MarkdownFragment.new(@root).to_html + "<ul class=\"posts\">\n"
-
+    list = MarkdownFragment.new(@includes['index'])
+      .compile({ "title" => @config['site_name' ]}) + "<ul class=\"posts\">\n"
+    
+    # use reduce & shorthand
     @posts.each { | post | 
       open  = "<li><article>"
-      href  = "/#{@dirs['posts']}/#{post.link}"
+      href  = "/#{post.link}"
       head  = "<h3>#{post.title}</h3>"
       date  = "<h4><time datetime='#{post.date}}'>#{post.year}<time></h4>"
       close = "</article></li>\n"
@@ -132,25 +133,26 @@ class PageList
       list << "#{open}<a href='#{href}'>#{head}</a>#{date}#{close}" 
     }
   
-    list << "</ul>\n#{@footer}"
+    list << "</ul>\n#{@includes['footer']}"
     
     # @FIXME
     # Broken (header/footer) still have placeholders.
     # A different class modelling is required here
-    "#{@header} #{list} #{@footer}"
+    "#{@includes['header']} #{list} #{@includes['footer']}"
   end
   
   def generate_rss()
+    # todo use reduce
     rss = RSS::Maker.make("2.0") do |maker|
-      maker.channel.author = @config[:author_name]
+      maker.channel.author = @config['author_name']
       maker.channel.updated = Time.now.to_s
-      maker.channel.title = "#{@config[:site_name]} RSS Feed"
-      maker.channel.description = "Official RSS Feed for #{@config[:site_url]}"
-      maker.channel.link = @config[:site_url]
-  
+      maker.channel.title = "#{@config['site_name']} RSS Feed"
+      maker.channel.description = "Official RSS Feed for #{@config['site_url']}"
+      maker.channel.link = @config['site_url']
+      
       @posts.each do |post|
         maker.items.new_item do |item|
-          item.link = "#{@config[:site_url]}/#{@dirs['posts']}/#{post.link}"
+          item.link = "#{@config['site_url']}/#{@config['output']['posts']}/#{post.link}"
           item.title = post.title
           item.updated = (Date.parse(post.date.to_s).to_time + 12*60*60).to_s
           item.pubDate = date.rfc822
@@ -160,93 +162,55 @@ class PageList
       rss
     end
   end
+  
+  attr_reader :posts, :pages
 end
 
-class PlainFile
-  def initialize(path)
-    @dir = to_dir_from_path(path)
+
+class MarkdownPage
+  def initialize(path, markdown_text)
+    @dir    = to_dir_from_path(path)
+    @data   = MarkdownFragment.new(markdown_text)
+    @title  = nil
+    @header = nil
+    @footer = nil
   end
-  
-  def to_disk() 
-    { dir: @dir }
-  end 
+
+  def add_header(html)  
+    @header = HTMLFragment.new(html)
+
+    self
+   end
+
+  def add_footer(html)
+    @footer = HTMLFragment.new(html)
+
+    self
+  end
   
   def to_dir_from_path(path)
     File.join(File.dirname(path), File.basename(path, ".*"))
   end
-  
-  attr_reader :path, :data
+    
+  attr_reader :dir, :title, :data
 end
 
-class Page < PlainFile
+class MarkdownPost < MarkdownPage
   def initialize(path, markdown_text)
-    @dir   = to_dir_from_path(path)
-    @data  = MarkdownFragment.new(markdown_text).to_html
-    @title = MarkdownFragment.new(markdown_text).to_title
-  end
-  
-  def to_disk() 
-    { dir: @dir, title: @title, data: @data  }
-  end 
+    super
 
-  def attach_header(header_html)  
-    @data = header_html + @data
-    self
-   end
-
-  def attach_footer(footer_html)
-    @data = @data + footer_html
-    self
-  end
-  
-  def replace_bytes_placeholder()
-    @data = @data.gsub('{{BYTES}}', @data.split.join.bytesize.to_s)
-    
-    self
-  end
-  
-  def replace_favicon_placeholder(favicon)
-    @data = @data.gsub('{{FAVICON}}', favicon)
-    self
-  end
-
-  def extract_title_from_md(markdown_text)
-    lines = markdown_text.lines
-    lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
-  end
-    
-  attr_reader :dir, :title, :data, :highlights, :date, :year
-end
-
-class Post < Page
-  def initialize(path, markdown_text)
-    @dir   = to_dir_from_path(path)
-
-    @data  = MarkdownFragment.new(markdown_text).to_html
-    @title = MarkdownFragment.new(markdown_text).to_title
-    
-    @link  = "#{@dir}/"
-    @date  = parse_date(markdown_text)
-    @year  = @date.strftime("%b, %Y")
-    
-    @highlights = []
-  end
-  
-  def to_disk() 
-    { dir: @dir, title: @title, data: @data, highlights: @highlights  }
-  end 
-  
-  def to_rss()
-    { title: @title, date: @date, data: @data }
+    @styles = []
+    @date   = parse_date(markdown_text)
+    @year   = @date.strftime("%b, %Y")
   end
   
   
   # @todo allow custom
-  def attach_highlights(public_dir)
-    tag = '<link rel="stylesheet" href="/'+ public_dir +'/highlight.css"><link>'
-
-    highlights.push(Rouge::Themes::Github.mode(:light)
-      .render(scope: '.highlight'))
+  def add_styles(path)
+    @styles.push({
+      css: Rouge::Themes::Github.mode(:light).render(scope: '.highlight'),
+      path: path
+    })
     
     self
   end
@@ -255,7 +219,7 @@ class Post < Page
     Date.parse(markdown_text.lines[2]&.strip || '') rescue Date.today
   end
 
-  attr_reader :dir, :link, :title, :fname, :data, :highlights, :date, :year
+  attr_reader :dir, :link, :title, :fname, :data, :styles, :date, :year
 end
 
 def is_markdown(path) 
@@ -270,36 +234,24 @@ def write_page(output_dir, page)
 end
 
 def build(config)
-  dirs  = config['directories']
-  files = config['files']
-
-  # ensure the build dirs exist, create them if not
-  [dirs['output'], dirs['posts_output']].each { |dir| FileUtils.mkdir_p(dir) }
-  
-  # @TODO use the structure of config directly and stop
-  # reinitializing stuff
-  page_list = PageList.new(
-    File.read(config['files']['header']), 
-    File.read(config['files']['footer']),
-    File.read(config['files']['root_index']),
-    dirs, 
-    { 
-      site_url: config['site_url'], 
-      site_name: config['site_name'], 
-      author_name: config['author_name'],
-      favicon: config['misc']['favicon']
-    }
+  doclist = DocumentList.new(
+    config, 
+    config['includes'].transform_values{ File.read(_1) } 
   )
 
-  posts = Find.find(dirs['posts'])
-    .filter { | path | is_markdown(path) }
-    .map    { | path | page_list.add_post(path, File.read(path)) }
+  Find.find(config['input']['posts'])
+    .filter { is_markdown(_1) }
+    .each   { doclist.add_post(_1, File.read(_1))  }
 
-  posts = Find.find(dirs['pages'])
-    .filter { | path | is_markdown(path) }
-    .map    { | path | page_list.add_page(path, File.read(path)) }
+  Find.find(config['input']['pages'])
+    .filter { is_markdown(_1) }
+    .each   { doclist.add_page(_1, File.read(_1))  }
   
-  puts page_list.generate_index
+  puts doclist.posts[0].styles
+  puts File.join(config['output']['root'], doclist.posts[0].dir, 'index.html')
+  
+  # ensure the build dirs exist, create them if not
+  # [dirs['output'], dirs['posts_output']].each { |dir| FileUtils.mkdir_p(dir) }
 end
 
 build(YAML.load_file('_config.yml'))

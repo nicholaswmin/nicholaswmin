@@ -7,9 +7,12 @@ yarn-error.log*
 lerna-debug.log*
 .DS_Store
 
-# pop build
+# build
 /build
 build/
+
+# scratchfiles
+scratch.*
 
 # Dumps
 *.rdb

@@ -1,22 +1,22 @@
 site_url: 'https://nicholaswmin.github.io'
 site_name: 'nicholaswmin'
 author_name: 'nicholaswmin'
+favicon: 🚜
 
-directories:
-  posts: 'posts'
-  pages: 'pages'
-  public: 'public'
-  output: 'build'
-  posts_output: 'build/posts'
-  pages_output: 'build/'
-  
-files:
+includes:
+  index : 'index.md'
   header: 'header.html'
-  cv: 'cv.html'
+  # @TODO this looks off, it is an index
+  posts : 'pages/posts.md'
   footer: 'footer.html'
-  root_index: 'index.md'
-  posts_index: 'pages/posts.md'
-  rss: 'build/index.rss'
 
-misc:
-  favicon: 🚜
+input:
+  public: 'public'
+  posts : 'posts'
+  pages : 'pages'
+
+output: 
+  root  : 'build'
+  public: '/public'
+  posts : '/posts'
+  pages : '/'
