@@ -18,8 +18,7 @@
 
 ## install
 
-It's a single-file, `nix.rb`.     
-Download [nix.rb][file-rb], drop it in a folder, and:
+It's a single-file, `nix.rb`. Download it, drop it in a folder, and:
 
 > creates a sample blog:
 
