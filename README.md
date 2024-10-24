@@ -21,8 +21,17 @@ Download `nix.rb`, drop it in a folder, and:
 
 ```bash
 # or nix -i
-nix --init
+ruby nix.rb --init
 ```
+
+> rebuild blog 
+
+```bash
+# or nix -i
+ruby nix.rb --init
+```
+
+builds all `HTML` in `build/`.
 
 ## usage 
 
