@@ -20,14 +20,16 @@
 
 It's a single-file, `nix.rb`. Download it, drop it in a folder, and:
 
-> creates a sample blog:
+> create a sample blog:
 
 ```bash
 # or nix -i
 ruby nix.rb --init
 ```
 
-> add posts as [gfm markdown][gfm] in `posts/`, and:
+add posts as [gfm markdown][gfm] in `posts/`, then:
+
+> build HTML in `build/`
 
 ```bash
 ruby nix.rb
