@@ -11,7 +11,7 @@
 ## install
 
 It's a single-file, `nix.rb`.     
-Download [nix.rb][file], drop it in a folder, and:
+Download [nix.rb][file-rb], drop it in a folder, and:
 
 ```bash
 # or nix -i
@@ -138,6 +138,7 @@ Written for testability, in [*idiomatic Ruby*][id-ruby].
 [gfm]: https://github.github.com/gfm/
 [id-ruby]: https://franzejr.github.io/best-ruby/idiomatic_ruby/conditional_assignment.html
 [pygments]: https://pygments.org/
+[file-rb]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
 
 [suckless]: https://suckless.org/philosophy/
 [semantic-html]: https://html.spec.whatwg.org/multipage/#toc-dom
