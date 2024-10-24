@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Original code is from "wruby" Bradley Taunt
+# Original code is from "wruby" by Bradley Taunt
 # 
 # The MIT License
 # 
@@ -42,36 +42,15 @@ puts "\033[34m\ngems installed and loaded\n\e[0m"
 
 # ------------- Content Functions ---------------
 
-class InvalidFormatException < StandardError
-  def message
-    "\nPost is incorrectly formatted\n\n" +
-    "It must be formatted like so:\n\n" +
-    "line 1: # <TITLE>\n" + 
-    "line 2: <empty-line>\n" + 
-    "line 3: <DATE-YYYY:MM:DD>\n" +
-    "line 4: <empty-line >\n" +
-    "line 5: content starts ...\n\n" +
-    "Example:\n\n" +
-    "# My thoughts on FooBar \n" + 
-    "\n" + 
-    "2022-11-22\n\n" +
-    "\n" +
-    "Lorem ipsum dolor sit amet bla bla\n" +
-    "bla bla bla ....\n\n"
-  end
-end
-
 # Replace the title meta tag in the header.html
 def replace_title(header, title)
   header.gsub('<title>{{TITLE}}</title>', "<title>#{title}</title>")
 end
 
-
 # Replace the bytes placeholder
 def replace_bytes(html)
   html.gsub('{{BYTES}}', html.split.join.bytesize.to_s)
 end
-
 
 # Replace the favicon in header.html
 def replace_favicon(html, favicon)
@@ -81,7 +60,7 @@ end
 # Grab the title from each markdown file
 def extract_title_from_md(lines, p)
   first_line = lines.first
-  first_line&.start_with?('# ') ? first_line[2..-1].strip : 'Blog Index'
+  lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
 end
 
 def add_main_css_class(html, css_class)
@@ -109,15 +88,23 @@ def verify_post_format (input_dir)
   end
 end
 
-# render to github-style markdown
-def markdown_to_html(md_content)
-  Kramdown::Document.new(md_content, {
-    input: 'GFM',
-    auto_ids: true,
-    syntax_highlighter: 'rouge'
-  }).to_html
+
+
+# @todo class?
+def create_markdown(md)
+  lines = md.lines
+  first = lines.first
+  title = first&.start_with?('# ') ? first[2..-1].strip : 'Blog Index'
+  date  = Date.parse(lines[2]&.strip || '') rescue Date.today
+  year  = date.strftime("%b, %Y")
+  html  = markdown_to_html(md)
+
+  { title: title, date: date, year: year, html: html } 
 end
 
+def replace_placeholder (placeholder, replacement)
+  html.gsub(placeholder, replacement)
+end
 
 # Convert markdown files
 def process_md_files(input_dir, header, footer, favicon)
@@ -131,7 +118,8 @@ def process_md_files(input_dir, header, footer, favicon)
       md_content = File.read(path)
       lines = md_content.lines
   
-      title = extract_title_from_md(lines, path)
+      title = lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
+
       date = Date.parse(lines[2]&.strip || '') rescue Date.today
       year = date.strftime("%b, %Y")
 
@@ -191,12 +179,6 @@ def process_posts(input_dir, output_dir, pub_dir, header, footer, favicon)
   posts
 end
 
-# @todo config for dark or light
-def generate_highlight_css(output_dir, public_dir)
-  css = Rouge::Themes::Github.mode(:dark).render(scope: '.highlight')
-  File.write("#{output_dir}/#{public_dir}/highlight.css", css)
-end
-
 # Create the root index file
 def generate_index(posts, header, footer, root_index, post_count, output_dir, posts_dir)
   root_index = File.read(root_index)
@@ -249,109 +231,139 @@ def generate_rss(posts, rss_file, author_name, site_name, site_url, posts_dir)
   File.write(rss_file, rss)
 end
 
-
-# ------------ Build/Serve Functions ------------
-
-
-def build(config)
-  posts_dir = config['directories']['posts']
-  pages_dir = config['directories']['pages']
-  public_dir = config['directories']['public']
-  output_dir = config['directories']['output']
-  posts_output_dir = config['directories']['posts_output']
-  pages_output_dir = config['directories']['pages_output']
-  
-  root_index = config['files']['root_index']
-  posts_index = config['files']['posts_index']
-  header_file = config['files']['header']
-  footer_file = config['files']['footer']
-
-  rss_file = config['files']['rss']
-  site_url = config['site_url']
-  site_name = config['site_name']
-  author_name = config['author_name']
-  post_count = config['misc']['post_count']
-  favicon = config['misc']['favicon']
-
-  [posts_output_dir, pages_output_dir].each { |dir| FileUtils.mkdir_p(dir) }
-  
-  header = File.read(header_file)
-  footer = File.read(footer_file)
-
-  verify_post_format(posts_dir)
-
-  posts  = process_posts(posts_dir, posts_output_dir, public_dir, header, footer, favicon)
-    .sort_by { |post| -post[:date].to_time.to_i }
-  pages  = process_pages(pages_dir, pages_output_dir, header, footer, favicon)
-
-  generate_highlight_css(output_dir, public_dir)
-  generate_index(posts, header, footer, root_index, post_count, output_dir, posts_dir)
-  generate_rss(posts, rss_file, author_name, site_name, site_url, posts_dir)
-
-  FileUtils.cp_r(public_dir, output_dir)  
-  
-  puts "\033[32m\nbuild completed. output: '#{output_dir}/'\n \e[0m"
-end
-
-
-def serve(port, output_dir, public_dir)
-  root = File.expand_path "#{output_dir}"
-
-  server = WEBrick::HTTPServer.new :Port => port, :DocumentRoot => root
-
-  server.mount(
-    "#{public_dir}", 
-    WEBrick::HTTPServlet::FileHandler, 
-    "#{output_dir}/#{public_dir}/*"
-  )
-
-  trap 'INT' do 
-    server.shutdown 
-    exit true
+class Plainfile
+  def initialize(filename, content)
+      @@filename = filename
+      @content   = markdown_to_html(marktext)
+      @title = extract_title_from_md(marktext.lines)
   end
   
-  puts "\033[1;35m- server starting at: 8000 - \e[0m"
-
-  server.start
+  def to_disk() 
+    { filename: filename, title: title, content: content }
+  end 
+  
+  attr_reader :content, :title, :filename
 end
 
+class Markdown < Plainfile
+  def initialize(filename, marktext)
+    @filename = filename
+    @title = extract_title_from_md(marktext.lines)
+  
+    date  = Date.parse(marktext.lines[2]&.strip || '') rescue Date.today
+    @highlights  = []
+    @content     = markdown_to_html(marktext)
+    @date        = date
+    @year        = date.strftime("%b, %Y")
+  end
+  
+  def to_disk() 
+    { filename: filename + '.html', content: content, highlights: highlights  }
+  end 
 
-# ---------------- Program Main -----------------
+  def attach_header(header_html)  
+    @content = replace_header_placeholders(header_html) + @content
+    self
+   end
 
+  def attach_footer(footer_html)
+    @content = @content + replace_bytes(footer_html)
+    self
+  end
+  
+  def attach_highlights(paths)
+    highlights = paths.map{ | path | 
+      tag = '<link rel="stylesheet" href="/' + path + '><link>'
+      
+      @content = @content + tag + "\n"
 
-Thread.abort_on_exception = true
+      Rouge::Themes::Github.mode(:light).render(scope: '.highlight')
+    }
+    
+    self
+  end
+  
+  def add_favicon(favicon)
+    @content = @content.gsub('{{FAVICON}}', favicon)
 
-# Load configuration
-config = YAML.load_file('_config.yml')
+    self
+  end
+  
+  def extract_title_from_md(lines)
+    lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
+  end
+  
+  def replace_header_placeholders(html)
+    @content = @content.gsub('{{TITLE}}', html)
+  end
+  
+  def replace_footer_placeholders()
+    @content = @content.gsub('{{BYTES}}', @content.split.join.bytesize.to_s)
+    
+    self
+  end
+  
+  def markdown_to_html(marktext)
+    Kramdown::Document.new(marktext, {
+      input: 'GFM', auto_ids: true,
+      syntax_highlighter: 'rouge'
+    }).to_html
+  end
+  
+  def log 
+    p content.unicode_normalize
+    p '---'
+  end
 
-public_dir = config['directories']['public']
-output_dir = config['directories']['output']
-
-# Run the build
-build(config)
-
-# Dev. extras
-
-threads = []
-
-# Run server
-if (['--serve', '-s'] & ARGV).any? 
-  threads << Thread.new {
-    arg_p_i = ARGV.index('-p') ? ARGV.index('-p') : ARGV.index('--port')
-    port = arg_p_i ? ARGV[arg_p_i + 1] : 8000
-
-    serve(port, output_dir, public_dir)
-  } 
+  attr_reader :content, :filename, :title, :highlights
 end
- 
-# Watch for changes
-if (['--watch', '-w'] & ARGV).any? 
-  threads << Thread.new {
-    puts "\033[1;36m- watching for file changes at: **/*.* ...\e[0m"
-    Filewatcher.new('**/*.*', exclude: 'build/').watch do |changes|
-      build(config)
-    end
-  }
+
+def build(config)
+  dirs  = config['directories']
+  files = config['files']
+  misc  = config['misc'] 
+  
+  header = File.read(files['header'])
+  footer = File.read(files['footer'])
+
+  #site_url = config['site_url']
+  #site_name = config['site_name']
+  #author_name = config['author_name']
+  
+  [dirs['output'], dirs['posts_output']].each { |dir| FileUtils.mkdir_p(dir) }
+  
+  posts = Find.find(dirs['posts'])
+    .filter { | path | ['.md'].include? File.extname(path) }
+    .map { | path | Markdown.new(File.basename(path, File.extname(path)), File.read(path)) }
+    .map { | markdown | markdown.attach_header(header) }
+    .map { | markdown | markdown.attach_footer(footer) }
+    .map { | markdown | markdown.attach_highlights([dirs['public'] + '/hl.css']) }
+    .map { | markdown | markdown.to_disk() }
+    .each { | writable | 
+      puts "writing to: #{dirs['output']}/#{dirs['posts']}"
+      File.write("#{dirs['output']}/#{dirs['posts']}/#{writable[:filename]}", writable[:content]) 
+    }
+
+  pages = Find.find(dirs['pages'])
+    .filter { | path | ['.md'].include? File.extname(path) }
+
+  
+  # header = File.read(header_file)
+  # footer = File.read(footer_file)
+
+  # verify_post_format(posts_dir)
+
+  # posts  = process_posts(posts_dir, posts_output_dir, public_dir, header, footer, favicon)
+  #  .sort_by { |post| -post[:date].to_time.to_i }
+  # pages  = process_pages(pages_dir, pages_output_dir, header, footer, favicon)
+
+  # generate_highlight_css(output_dir, public_dir)
+  # generate_index(posts, header, footer, root_index, post_count, output_dir, posts_dir)
+  # generate_rss(posts, rss_file, author_name, site_name, site_url, posts_dir)
+
+  # FileUtils.cp_r(public_dir, output_dir)  
+  
+  # puts "\033[32m\nbuild completed. output: '#{output_dir}/'\n \e[0m"
 end
 
-threads.each { |thr| thr.join }
+build(YAML.load_file('_config.yml'))
