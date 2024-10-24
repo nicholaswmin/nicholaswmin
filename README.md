@@ -1,7 +1,8 @@
-# nix [WIP]
-
-> a [hyper minimal][concise] blogging framwork written in Ruby,
-> inspired by Bradley Taunt's [wruby][wruby] & the [1kb club][1kb]
+# nix   
+> WIP
+> a [hyper minimal][concise] blogging framwork written in Ruby.
+> 
+> inspired by Bradley Taunt's [wruby][wruby] & the [1kb club][club]
 >
 > `nix` means *nothing* in rejective form.
 
