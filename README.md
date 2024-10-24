@@ -9,7 +9,9 @@
 
 
 - [install](#install)
-- [usage](#usage)
+- [init](#usage)
+- [blog](#usage)
+- [publish](#usage)
 - [test](#test)
 - [license](#license)
 
@@ -17,13 +19,18 @@
 
 It's a single-file, [nix.rb][file-rb]; download & drop it in a folder:
 
+
+## init
+
 > create a sample blog:
 
 ```bash
 ruby nix.rb --init
 ```
 
-... add [markdown][gfm] in `posts/`, then:
+## blog
+
+add [markdown][gfm] in `posts/`, then:
 
 > build HTML in `build/`:
 
@@ -33,7 +40,9 @@ ruby nix.rb
 
 outputs all `HTML` in `/build`.
 
-> publish via [Github Pages][gh-pages]: 
+## publish
+
+>  via [Github Pages][gh-pages]: 
 
 `git push` all changes 
 
