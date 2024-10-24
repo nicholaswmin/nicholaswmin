@@ -1,45 +1,81 @@
 # pop
 
-> a microblogging framework written in Ruby, 
-> heavily adapted by [wruby][wruby]
-
-## blogging
-
-Posts go under `posts/` folder as `.md` files.  
-
-They must have an:
-
-- `h1` on the first line, 
-- a `space` on the second
-- the `date` on the 3rd, ie. `2024-10-18`.
-
-additionally:
-
-- media (images/video) to folder
-- css in `public/style.css`
+> a [hyper minimal][concise] blogging framework written in Ruby,
+> inspired by Bradley Taunt's [wruby][wruby] & the [1kb club][1kb]
+>
+> `nix` means *nothing* in rejective form.
 
 ## install
+
+This framework is a single-file, `nix.rb`.
+
+You just need [Ruby v3.3+][ruby].
+
+> in case you don't have it:
 
 ```bash
 brew install ruby
 ```
-> my ruby is: v3.3.5
 
-then download the file 
+Download `nix.rb`, drop it in a folder, and:
 
-## build & serve
+> generate a sample blog
+
+```bash
+# or nix -i
+nix --init
+```
+
+## usage 
+
+It's like [Jekyll][jekyll]. You write [Github-flavored Markdown][gfm]
+
+- Add posts in `posts/`
+- Add pages in `pages/`
+
+They *must* have an:
+
+- `# <post-title>` on the 1st line
+- `empty line` on the 2nd
+- `<date>` on the 3rd, ie. `2024-10-18`
+
+Example post (or page):
+
+```markdown
+# Lorem Ipsum
+
+2024-12-20
+
+A sentence should contain no unnecessary words, a paragraph no unnecessary 
+sentences, for the same reason that a drawing should have no unnecessary lines 
+and a machine no unnecessary parts. This requires not that the writer make all 
+his sentences short, or that he avoid all detail and treat his subjects only 
+in outline, but that every word tell
+
+The Elements of Style by William Strunk Jr (1918) ...
+```
+
+additionally:
+
+- add any media (images/video) in `public/`.
+- css styles are in `public/style.css`
+- site options are in `_config.rb`
+
+## build
 
 just run:
 
 ```bash
-make build
+ruby nix.rb
 ```
 
-which output everything in `build/` folder.
+outputs all in `build/`.
 
-### Watch files & build, serve
+### Automatic rebuild on file change
 
-Grab:
+> Tired of pressing `save` on every change?
+
+Grab [`fswatch`][fswatch]:
 
 ```bash
 brew install fswatch
@@ -51,9 +87,10 @@ then run:
 fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd -- build
 ```
 
-
-built with [wruby][wruby]
-
-
 [club]: https://1kb.club/
+[ruby]: https://ruby-doc.org/3.3.4/
 [wruby]: https://git.btxx.org/wruby/about/
+[jekyll]: https://jekyllrb.com/
+[concise]: https://en.wikipedia.org/wiki/Concision
+[fswatch]: https://github.com/emcrisostomo/fswatch
+[gfm]: https://github.github.com/gfm/
