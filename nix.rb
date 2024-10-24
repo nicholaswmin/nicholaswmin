@@ -17,6 +17,9 @@
 # 
 # Check out wruby here: https://git.btxx.org/wruby/tree/
 
+# TODO
+# - https://franzejr.github.io/best-ruby/idiomatic_ruby/each_vs_map.html
+
 require 'bundler/inline'
 
 gemfile do
