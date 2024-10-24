@@ -20,13 +20,12 @@ It's a single-file, [nix.rb][file-rb]; download & drop it in a folder:
 > create a sample blog:
 
 ```bash
-# or nix -i
 ruby nix.rb --init
 ```
 
-add posts as [gfm markdown][gfm] in `posts/`, then:
+... add [markdown][gfm] in `posts/`, then:
 
-> build HTML in `build/`
+> build HTML in `build/`:
 
 ```bash
 ruby nix.rb
@@ -34,7 +33,14 @@ ruby nix.rb
 
 outputs all `HTML` in `/build`.
 
-in case you don't have [ruby][ruby]:
+> publish via [Github Pages][gh-pages]: 
+
+`git push` all changes 
+
+- Visit `Repository` > `Settings` > `Pages`
+- Click `Enable` on branch `main` and folder `build/`
+
+visit: `<username>.github.io/<repo>`
 
 ```bash
 brew install ruby
