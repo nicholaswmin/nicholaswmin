@@ -113,11 +113,17 @@ fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd --
 
 Written for testability, in [*idiomatic Ruby*][id-ruby].
 
-## Conventions
+## test
 
-- Produces [Semantic HTML][semantic-html] & the [ARIA specs][aria]
-- Designed for testability, written in [*idiomatic Ruby*][id-ruby].
-- Follows a [suckless philosophy][suckless]
+```bash
+@todo
+```
+
+## conventions
+
+- follows [Semantic HTML][semantic-html] & the [ARIA specs][aria]
+- designed for testability, written in [*idiomatic Ruby*][id-ruby].
+- [suckless philosophy][suckless]
 
 ## License
 
