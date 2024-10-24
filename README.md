@@ -35,7 +35,7 @@ builds all `HTML` in `build/`.
 
 ## usage 
 
-It's like [Jekyll][jekyll]. You write [Github-flavored Markdown][gfm]
+It's like [Jekyll][jekyll]. You write [Github-flavored Markdown][gfm].
 
 - Add posts in `posts/`
 - Add pages in `pages/`
