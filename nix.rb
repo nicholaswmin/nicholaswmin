@@ -56,7 +56,7 @@ puts "\033[34m\ngems installed and loaded\n\e[0m"
 # and generate directories/write files out of them.
 # 
 # @TODO
-# - Comp. Warnings (turn on verbose)
+# - An init method
 # - Tests
 # - Problem
 # - Error handling
@@ -96,7 +96,7 @@ class Blog
     list = Kramdown::Document.new(@includes[:index], { input: 'GFM'})
       .to_html + "<ul class=\"posts\">\n"
 
-    # use reduce & shorthand
+    # @todo use reduce & shorthand
     posts.each { | post | 
       open  = "<li><article>"
       href  = "/#{post.link}"
@@ -140,6 +140,7 @@ class Blog
   
   attr_reader :pages
 end
+
 
 class Blogfile
   def initialize(path, data = nil)
