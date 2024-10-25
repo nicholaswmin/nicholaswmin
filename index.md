@@ -1,4 +1,6 @@
-# Posts 
+# Index
+
+12-12-12
 
 In common usage and linguistics, concision (also called conciseness[1], 
 terseness, brevity, or laconicism) is a communication principle[2] of 

@@ -56,74 +56,48 @@ puts "\033[34m\ngems installed and loaded\n\e[0m"
 # and generate directories/write files out of them.
 # 
 # @TODO
-# - Warning (turn on verbose)
+# - Comp. Warnings (turn on verbose)
 # - Tests
-# - Problemd
-#  - the page index.html is not markdown
-#  - current classes are `MarkdownPage` and `MarkdownPost`
-#  - I want to have [`MarkdownPage`, `MarkdownPost`, `index.html`] in
-#    and treat them all the same: `all.map(c => c.compile())`
+# - Problem
+# - Error handling
+# - Unique page class
 
 # --- Classes ---
 
-class HTMLFragment 
-  def initialize(html)
-    @html = html
-  end
-  
-  def compile(tokens)
-    tokens.reduce(@html) { _1.gsub(_2[0], _2[1]) }
-  end
-end
-
-class MarkdownFragment 
-  def initialize(markdown)
-    @markdown = markdown
-  end
-  
-  def to_title 
-    lines = @markdown.lines
-    lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
-  end
-
-  def compile()
-    HTMLFragment.new(Kramdown::Document.new(@markdown, {
-      input: 'GFM', auto_ids: true,
-      syntax_highlighter: 'rouge'
-    }).compile({ 'title' => to_title }))
-  end
-end
-
-class DocumentList
+class Blog
   def initialize(config, includes)
     @config   = config
     @includes = includes
-    @posts = []
     @pages = []
   end
   
-  def add_post(path, markdown_text)
-    @posts.push(MarkdownPost.new(path, markdown_text)
-      .add_header(@includes['header'])
-      .add_footer(@includes['footer'])
-      .add_styles(@config['output']['public']))
-    self
+  def posts 
+    @pages.filter { _1.class === "MarkdownPost" }
   end
   
-  def add_page(path, markdown_text)
-    @pages.push(MarkdownPage.new(path, markdown_text)
-      .add_header(@includes['header'])
-      .add_footer(@includes['footer']))
+  def compile(tokens = {})
+    generate_index
+    
+    @pages = @pages.map{ | page | page.compile(tokens) }
+  end
+  
+  def add_pages(pages)
+    @pages = @pages + pages
 
     self
   end
+
+  def add_page(page)
+    @pages.push(page)
+    self
+  end
   
-  def generate_index() 
-    list = MarkdownFragment.new(@includes['index'])
-      .compile({ "title" => @config['site_name' ]}) + "<ul class=\"posts\">\n"
-    
+  def generate_index
+    list = Kramdown::Document.new(@includes[:index], { input: 'GFM'})
+      .to_html + "<ul class=\"posts\">\n"
+
     # use reduce & shorthand
-    @posts.each { | post | 
+    posts.each { | post | 
       open  = "<li><article>"
       href  = "/#{post.link}"
       head  = "<h3>#{post.title}</h3>"
@@ -133,16 +107,17 @@ class DocumentList
       list << "#{open}<a href='#{href}'>#{head}</a>#{date}#{close}" 
     }
   
-    list << "</ul>\n#{@includes['footer']}"
+    list << "</ul>\n#{@includes[:footer]}"
+
+    "#{@includes[:header]} #{list} #{@includes[:footer]}"
+
+    add_page(HTMLPage.new("/", @config['site_name'], list))
     
-    # @FIXME
-    # Broken (header/footer) still have placeholders.
-    # A different class modelling is required here
-    "#{@includes['header']} #{list} #{@includes['footer']}"
+    self
   end
   
   def generate_rss()
-    # todo use reduce
+    # move this away
     rss = RSS::Maker.make("2.0") do |maker|
       maker.channel.author = @config['author_name']
       maker.channel.updated = Time.now.to_s
@@ -150,7 +125,7 @@ class DocumentList
       maker.channel.description = "Official RSS Feed for #{@config['site_url']}"
       maker.channel.link = @config['site_url']
       
-      @posts.each do |post|
+      posts.each do |post|
         maker.items.new_item do |item|
           item.link = "#{@config['site_url']}/#{@config['output']['posts']}/#{post.link}"
           item.title = post.title
@@ -163,95 +138,156 @@ class DocumentList
     end
   end
   
-  attr_reader :posts, :pages
+  attr_reader :pages
 end
 
-
-class MarkdownPage
-  def initialize(path, markdown_text)
-    @dir    = to_dir_from_path(path)
-    @data   = MarkdownFragment.new(markdown_text)
-    @title  = nil
-    @header = nil
-    @footer = nil
+class Blogfile
+  def initialize(path, data = nil)
+    @dir = File.join(File.dirname(path), File.basename(path, ".*"))
+    @path = File.join(@dir, 'index.html')
+    @data = data
   end
 
-  def add_header(html)  
-    @header = HTMLFragment.new(html)
+  attr_reader :dir, :path, :data
+end
+
+class CSSFile < Blogfile
+  def initialize(path, filename, css)
+    super(path, css)
+
+    @path = File.join(path, filename)
+  end
+
+  attr_reader :dir, :path, :data
+end
+
+class Page < Blogfile
+  def initialize(path, title, html)
+    super(path)
+
+    @title = title
+    @htmls = [html]
+  end
+  
+  def compile(tokens = {})
+    compiled = @htmls.reduce(:+) 
+
+    @data = ({ "{{TITLE}}" => @title, "{{BYTES}}" => compiled.bytesize.to_s }
+    .merge(tokens))
+    .reduce(compiled) { _1.gsub(_2[0], _2[1]) }
+  
+    self
+  end
+  
+  def add_fragment(html, index = nil)  
+    @htmls.insert(index ||= @htmls.length, html)
 
     self
    end
+   
+   def link_css(path)
+     add_fragment('<link rel="stylesheet" href="'+path+'"></link>')
+   end
+  
+  attr_reader :html, :dir
+end
 
-  def add_footer(html)
-    @footer = HTMLFragment.new(html)
-
-    self
+class HTMLPage < Page
+  def initialize(path, title, html)
+    super
   end
   
-  def to_dir_from_path(path)
-    File.join(File.dirname(path), File.basename(path, ".*"))
+  attr_reader :dir, :html, :title
+end
+
+class MarkdownPage < Page
+  def initialize(path, markdown)
+    super(path, extract_title(markdown), Kramdown::Document.new(markdown, {
+      input: 'GFM', auto_ids: true,
+      syntax_highlighter: 'rouge'
+    }).to_html)
   end
-    
-  attr_reader :dir, :title, :data
+  
+  def extract_title(markdown)
+    lines = markdown.lines
+    lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
+  end
+
+  attr_reader :dir, :html, :title
 end
 
 class MarkdownPost < MarkdownPage
-  def initialize(path, markdown_text)
+  def initialize(path, markdown)
     super
+    @date = parse_date(markdown)
+    @year = @date.strftime("%b, %Y")
+  end
 
-    @styles = []
-    @date   = parse_date(markdown_text)
-    @year   = @date.strftime("%b, %Y")
-  end
-  
-  
-  # @todo allow custom
-  def add_styles(path)
-    @styles.push({
-      css: Rouge::Themes::Github.mode(:light).render(scope: '.highlight'),
-      path: path
-    })
-    
-    self
-  end
-  
   def parse_date(markdown_text)
     Date.parse(markdown_text.lines[2]&.strip || '') rescue Date.today
   end
 
-  attr_reader :dir, :link, :title, :fname, :data, :styles, :date, :year
+  attr_reader :dir, :html, :title, :link, :fname, :date, :year
 end
 
-def is_markdown(path) 
-  ['.md'].include? File.extname(path)
-end
+# --- Filesystem helpers ---- 
 
 def write_page(output_dir, page) 
   path = File.join(output_dir, page[:dir])
-  File.write("#{path}/index.html", page[:data])
+  File.write("#{path}/index.html", page[:html])
   
   puts "wrote: #{path}"
 end
 
-def build(config)
-  doclist = DocumentList.new(
-    config, 
-    config['includes'].transform_values{ File.read(_1) } 
-  )
 
-  Find.find(config['input']['posts'])
-    .filter { is_markdown(_1) }
-    .each   { doclist.add_post(_1, File.read(_1))  }
+# @todo guard against unnknown files
+def load_dir(path, ext = ['.md']) 
+  Find.find(path == '/' ? './' : path)
+    .filter { ext.include? File.extname(_1) }
+    .map { File.read(_1) }
+end
 
-  Find.find(config['input']['pages'])
-    .filter { is_markdown(_1) }
-    .each   { doclist.add_page(_1, File.read(_1))  }
+def load_files(hash)
+  hash.each do |k, v|
+    hash[k] = v.is_a?(String) && File.exist?(v) ? 
+      (File.directory?(v) ? load_dir(v) : File.read(v)) : hash[k]
+    v.is_a?(Hash) ? load_files(v) : nil
+  end
+  hash
+end
+
+# --- Build function ---- 
+
+def build(config)  
+  files = load_files(config['files'])
+  header = files['includes']['header']
+  footer = files['includes']['footer']
+  index  = files['includes']['index']
+
+  blog = Blog.new(config, { header:, footer:, index: })
+
+  posts = files['input']['posts'].map {
+    MarkdownPost.new(config['output']['posts'], _1)
+      .add_fragment(header, 0)
+      .add_fragment(footer)
+      .link_css(File.join(config['output']['posts'], 'hl.css'))}
   
-  puts doclist.posts[0].styles
-  puts File.join(config['output']['root'], doclist.posts[0].dir, 'index.html')
+  pages = files['input']['pages'].map { 
+    MarkdownPage.new(config['output']['posts'], _1)
+      .add_fragment(header, 0)
+      .add_fragment(footer) }
+  
+  blog
+    .add_pages(pages + posts)
+    .compile({ "{{FAVICON}}" => config['favicon']  })
+  
+  puts blog.pages[3].data
+  #puts File.join(config['output']['root'], doclist.posts[0].dir, 'index.html')
   
   # ensure the build dirs exist, create them if not
   # [dirs['output'], dirs['posts_output']].each { |dir| FileUtils.mkdir_p(dir) }
+  
+  #write_page
 end
 
 build(YAML.load_file('_config.yml'))
