@@ -17,7 +17,7 @@ files:
     pages : 'pages'
   
 output: 
-  root  : 'build'
-  public: '/public'
-  posts : '/posts'
+  root  : './build/'
+  public: './public/'
+  posts : './posts/'
   pages : '/'

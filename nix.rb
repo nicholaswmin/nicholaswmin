@@ -34,7 +34,7 @@ require 'date'
 require 'find'
 require 'yaml'
 
-puts "\033[34m\ngems installed and loaded\n\e[0m"
+puts "\033[32m- gems installed & loaded!\e[0m"
 
 # This document is comprised of:
 # 
@@ -61,6 +61,9 @@ puts "\033[34m\ngems installed and loaded\n\e[0m"
 # - Problem
 # - Error handling
 # - Unique page class
+# 
+# # Style tweaks
+# - use https://rubystyle.guide/#percent-q-shorthand
 
 # --- Classes ---
 
@@ -68,6 +71,7 @@ class Blog
   def initialize(config, includes)
     @config   = config
     @includes = includes
+    @files = []
     @pages = []
   end
   
@@ -78,9 +82,15 @@ class Blog
   def compile(tokens = {})
     generate_index
     
-    @pages = @pages.map{ | page | page.compile(tokens) }
+    @files = @files + @pages.map{ | page | page.compile(tokens) }
   end
   
+  def add_file(file)
+    @files.push(file)
+
+    self
+  end
+
   def add_pages(pages)
     @pages = @pages + pages
 
@@ -93,7 +103,7 @@ class Blog
   end
   
   def generate_index
-    list = Kramdown::Document.new(@includes[:index], { input: 'GFM'})
+    html = Kramdown::Document.new(@includes[:index], { input: 'GFM'})
       .to_html + "<ul class=\"posts\">\n"
 
     # @todo use reduce & shorthand
@@ -104,14 +114,14 @@ class Blog
       date  = "<h4><time datetime='#{post.date}}'>#{post.year}<time></h4>"
       close = "</article></li>\n"
 
-      list << "#{open}<a href='#{href}'>#{head}</a>#{date}#{close}" 
+      html << "#{open}<a href='#{href}'>#{head}</a>#{date}#{close}" 
     }
   
-    list << "</ul>\n#{@includes[:footer]}"
+    html << "</ul>\n#{@includes[:footer]}"
 
-    "#{@includes[:header]} #{list} #{@includes[:footer]}"
+    "#{@includes[:header]} #{html} #{@includes[:footer]}"
 
-    add_page(HTMLPage.new("/", @config['site_name'], list))
+    add_page(HTMLPage.new(path: '/', title: @config['site_name'], html: ))
     
     self
   end
@@ -119,15 +129,15 @@ class Blog
   def generate_rss()
     # move this away
     rss = RSS::Maker.make("2.0") do |maker|
-      maker.channel.author = @config['author_name']
+      maker.channel.author = @config["author_name"]
       maker.channel.updated = Time.now.to_s
-      maker.channel.title = "#{@config['site_name']} RSS Feed"
-      maker.channel.description = "Official RSS Feed for #{@config['site_url']}"
-      maker.channel.link = @config['site_url']
+      maker.channel.title = "#{@config["site_name"]} RSS Feed"
+      maker.channel.description = "Official RSS Feed for #{@config["site_url"]}"
+      maker.channel.link = @config["site_url"]
       
       posts.each do |post|
         maker.items.new_item do |item|
-          item.link = "#{@config['site_url']}/#{@config['output']['posts']}/#{post.link}"
+          item.link = "#{@config["site_url"]}/#{@config["output"]["posts"]}/#{post.link}"
           item.title = post.title
           item.updated = (Date.parse(post.date.to_s).to_time + 12*60*60).to_s
           item.pubDate = date.rfc822
@@ -138,12 +148,12 @@ class Blog
     end
   end
   
-  attr_reader :pages
+  attr_reader :files
 end
 
 
 class Blogfile
-  def initialize(path, data = nil)
+  def initialize(path:, data:)
     @dir = File.join(File.dirname(path), File.basename(path, ".*"))
     @path = File.join(@dir, 'index.html')
     @data = data
@@ -152,19 +162,9 @@ class Blogfile
   attr_reader :dir, :path, :data
 end
 
-class CSSFile < Blogfile
-  def initialize(path, filename, css)
-    super(path, css)
-
-    @path = File.join(path, filename)
-  end
-
-  attr_reader :dir, :path, :data
-end
-
 class Page < Blogfile
-  def initialize(path, title, html)
-    super(path)
+  def initialize(path:, title:, html:)
+    super(path:, data: html)
 
     @title = title
     @htmls = [html]
@@ -180,21 +180,17 @@ class Page < Blogfile
     self
   end
   
-  def add_fragment(html, index = nil)  
+  def add_fragment(html:, index: 0)  
     @htmls.insert(index ||= @htmls.length, html)
 
     self
-   end
-   
-   def link_css(path)
-     add_fragment('<link rel="stylesheet" href="'+path+'"></link>')
    end
   
   attr_reader :html, :dir
 end
 
 class HTMLPage < Page
-  def initialize(path, title, html)
+  def initialize(path:, title:, html:)
     super
   end
   
@@ -202,8 +198,8 @@ class HTMLPage < Page
 end
 
 class MarkdownPage < Page
-  def initialize(path, markdown)
-    super(path, extract_title(markdown), Kramdown::Document.new(markdown, {
+  def initialize(path:, markdown:)
+    super(path:, title: extract_title(markdown), html: Kramdown::Document.new(markdown, {
       input: 'GFM', auto_ids: true,
       syntax_highlighter: 'rouge'
     }).to_html)
@@ -218,7 +214,7 @@ class MarkdownPage < Page
 end
 
 class MarkdownPost < MarkdownPage
-  def initialize(path, markdown)
+  def initialize(path:, markdown:)
     super
     @date = parse_date(markdown)
     @year = @date.strftime("%b, %Y")
@@ -233,28 +229,38 @@ end
 
 # --- Filesystem helpers ---- 
 
-def write_page(output_dir, page) 
-  path = File.join(output_dir, page[:dir])
-  File.write("#{path}/index.html", page[:html])
-  
-  puts "wrote: #{path}"
+def load_file(path) 
+  { path:, data: File.read(path) }
 end
 
-
 # @todo guard against unnknown files
-def load_dir(path, ext = ['.md']) 
+def load_dir(path, allowed = ['.md', '.html']) 
   Find.find(path == '/' ? './' : path)
-    .filter { ext.include? File.extname(_1) }
-    .map { File.read(_1) }
+    .filter { allowed.include? File.extname(_1) }
+    .map { load_file(_1) }
 end
 
 def load_files(hash)
   hash.each do |k, v|
     hash[k] = v.is_a?(String) && File.exist?(v) ? 
-      (File.directory?(v) ? load_dir(v) : File.read(v)) : hash[k]
+      (File.directory?(v) ? load_dir(v) : load_file(v)) : hash[k]
     v.is_a?(Hash) ? load_files(v) : nil
   end
   hash
+end
+
+def write_blog(blog, dirs)
+  # ensure the build dirs exist, create them if not
+  puts "\033[36m- rebuilding dirs ...\e[0m"
+  [dirs['root'], dirs['posts']].each { FileUtils.mkdir_p(_1) }
+  # create the folder and write
+  blog.files.each { | file | 
+    puts "\033[36m- writing: #{file.dir} ...\e[0m"
+
+    FileUtils.mkdir_p(File.join(dirs['root'], file.dir))
+    File.write(File.join(dirs['root'], file.path), file.data) 
+  }
+  puts "\033[32m ok!\e[0m"
 end
 
 # --- Build function ---- 
@@ -264,31 +270,30 @@ def build(config)
   header = files['includes']['header']
   footer = files['includes']['footer']
   index  = files['includes']['index']
-
-  blog = Blog.new(config, { header:, footer:, index: })
+  
+  blog = Blog.new(config, { 
+    header: header[:data], 
+    footer: footer[:data], 
+    index:  index[:data] 
+  })
 
   posts = files['input']['posts'].map {
-    MarkdownPost.new(config['output']['posts'], _1)
-      .add_fragment(header, 0)
-      .add_fragment(footer)
-      .link_css(File.join(config['output']['posts'], 'hl.css'))}
+    MarkdownPost.new(path: _1[:path], markdown: _1[:data])
+      .add_fragment(html: header[:data], index: 0)
+      .add_fragment(html: footer[:data])
+  }
   
   pages = files['input']['pages'].map { 
-    MarkdownPage.new(config['output']['posts'], _1)
-      .add_fragment(header, 0)
-      .add_fragment(footer) }
+    MarkdownPage.new(path: _1[:path], markdown: _1[:data])
+      .add_fragment(html: header[:data], index: 0)
+      .add_fragment(html: footer[:data])
+  }
   
   blog
     .add_pages(pages + posts)
     .compile({ "{{FAVICON}}" => config['favicon']  })
   
-  puts blog.pages[3].data
-  #puts File.join(config['output']['root'], doclist.posts[0].dir, 'index.html')
-  
-  # ensure the build dirs exist, create them if not
-  # [dirs['output'], dirs['posts_output']].each { |dir| FileUtils.mkdir_p(dir) }
-  
-  #write_page
+  write_blog(blog, config['output'])
 end
 
 build(YAML.load_file('_config.yml'))

@@ -92,6 +92,12 @@ additionally:
 - css are in `public/style.css`
 - config site via `_config.rb`
 
+## Serve it locally
+
+```bash
+ruby -run -e httpd -- build
+```
+
 ## Rebuild on file change
 
 > tired of pressing `save` on every change?
