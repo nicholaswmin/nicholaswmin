@@ -16,6 +16,7 @@
 # been possible without "wruby".
 # 
 # Check out wruby here: https://git.btxx.org/wruby/tree/
+$VERBOSE = true
 
 require 'bundler/inline'
 
@@ -34,24 +35,20 @@ require 'yaml'
 
 puts "gems installed & loaded!"
 
-# This document is comprised of:
+# This document is expected (might be out of date) 
+# to consist of:
 # 
-#  - Classes 
-#  - couple of filesystem `read`/`write` functions
-#  - the main `build()` function 
+#  - Classes:
+#   - A main `class` holding everything together.
+#   - A bunch of `Page`-like classes, each representing 
+#     a different page formats.
+#  - possibly some filesystem helpers
+#  - a main `build()` function 
 # 
 # The classes are *decoupled* from the filesystem and shouldn't 
 # mess with it. They shouldn't use or know abou `File.read/write` or
 # anything of the sort. This separates the concerns and allows for easy-peasy
 # unit testing of the core logic without touching a filesystem itself.
-# 
-# The filesystem `read` functions should get all neceessary files which
-# are then used to generate classes.
-# 
-# The classes are responsible for generating the appropriate HTML structures
-# 
-# The filesystem functions then take those classes 
-# and generate directories/write files out of them.
 # 
 # @TODO
 # - [ ] An init method
@@ -68,14 +65,12 @@ puts "gems installed & loaded!"
 
 # --- Classes ---
 
-# The main class. It holds all pages.
-# When `compile` is called it compiles every page
-# and returns a list of `Files`. 
+# The main class. It holds all `Page`-like instances.
 # 
-# Each `File` has a `path` & `contents` that, 
-# if written as a file, will constitute a 
-# fully-working website.
-
+# - When `compile` is called it compiles every page
+#   and returns a list of `Files`-like instances,
+#   which is the blog pages plus any deduped assets.
+#
 class Blog
   attr_reader :config
 
@@ -87,6 +82,9 @@ class Blog
     @footer = config[:footer]
 
     @pages = []
+    @tokens = { 
+      '{{FAVICON}}' => config['favicon'],
+    }
   end
 
   def posts 
@@ -99,7 +97,7 @@ class Blog
     generate_index
 
     res = @pages.map do | p | 
-      p.compile({ '{{FAVICON}}' => @favicon, **tokens }) 
+      p.compile({ ** @tokens, **tokens }) 
     end
     
     res = @pages + @pages.map do | p | p.assets end
@@ -115,24 +113,23 @@ class Blog
   end
   
   def generate_index
-    list = posts.reduce(format('%<main>s \n <ul class="%<classname>s">', {
+    list = posts.reduce(format('%<main>s <ul class="%<classname>s">', {
       main: Kramdown::Document.new(@index, input: 'GFM').to_html,
       classname: 'posts'
     })) do | list, post | 
       list << format(
         '%<open>s<a href="/%<path>s">%<head>s</a>%<date>s%<close>s', {
           open: '<li><article>',
-          head: format('<h3>%<title>s</h3>', { title: post.title }),
+          head: format('<h3> %<title>s </h3>', { title: post.title }),
           path: post.path,
           date: format('<h4><time datetime="%<date>s">%<year>s<time></h4>', {
             date: post.date, year: post.year
           }),
           close: '</article></li>'
-        }
-      ) << '</ul>'
+      })
     end
 
-    add(HTMLPage.new(path: 'index.html', html: list))
+    add(HTMLPage.new(path: 'index.html', html: list << '</ul>'))
 
     self
   end
@@ -203,34 +200,36 @@ end
 
 # --- Userland (supposedly) ---- 
 
-class MDPage < HTMLPage
-  def initialize path:, markdown:
-    super(
-      path:,
-      title: parse_title(markdown), 
-      html: Kramdown::Document.new(markdown, input: 'GFM').to_html)
+# @TODO this feels wrong?
+class MarkdownPage < HTMLPage
+  def initialize path:, markdown: 
+    super(path:, title: to_title(markdown), html: to_html(markdown))
   end
   
-  def parse_title markdown
+  def to_title markdown
     markdown.lines.first&.start_with?('# ') ? 
       markdown.lines.first[2..-1].strip : 
       'Blog Index'
   end
+  
+  def to_html markdown, opts = { input: 'GFM' }
+    Kramdown::Document.new(markdown, opts).to_html
+  end
 
-  def self.from reader, glob 
+  def self.from readerFn, glob 
     Pathname.glob(glob).map do | path |
-      self.new(path:, markdown: reader.call(path) )
+      self.new(path:, markdown: readerFn.call(path) )
     end
   end
 end
 
-class Page < MDPage 
+class Page < MarkdownPage 
   def initialize path:, markdown: 
     super(path: "#{path.basename(path.extname)}.html", markdown:)
   end
 end
 
-class Post < MDPage
+class Post < MarkdownPage
   attr_reader :date, :year
 
   def initialize path:, markdown:, assets: []
@@ -247,7 +246,7 @@ end
 # --- Build function ---- 
 
 def build config
-  reader_fn = Proc.new do | path | File.read path end
+  reader = Proc.new do | path | File.read path end
 
   Blog.new({
     index:  File.read('index.md'), 
@@ -255,8 +254,8 @@ def build config
     footer: File.read('src/footer.html'), 
     ** config
   })
-  .add(Post.from(reader_fn, 'posts/**.md'))
-  .add(Page.from(reader_fn, 'pages/**.md'))
+  .add(Post.from(reader, 'posts/**.md'))
+  .add(Page.from(reader, 'pages/**.md'))
   .compile({ "{{FOO}}" => 'BAR' })
   .each do | page |
     puts "writes: #{page.path}"
