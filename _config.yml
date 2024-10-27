@@ -1,23 +1,5 @@
-site_url: 'https://nicholaswmin.github.io'
-site_name: 'a blog'
-author_name: 'nicholaswmin'
+dest: './build'
+url: 'https://nicholaswmin.github.io'
+name: 'a blog'
+author: 'nicholaswmin'
 favicon: 🚜
-
-files:
-  includes:
-    index : 'index.md'
-    header: 'header.html'
-    # @TODO this looks off, it is an index  
-    posts : 'pages/posts.md'
-    footer: 'footer.html'
-  
-  input:
-    public: 'public'
-    posts : 'posts'
-    pages : 'pages'
-  
-output: 
-  root  : './build/'
-  public: './public/'
-  posts : './posts/'
-  pages : '/'

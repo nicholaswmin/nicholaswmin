@@ -114,6 +114,15 @@ then run:
 fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd -- build
 ```
 
+## contributing
+
+> stay within the LOCs
+
+```bash
+# LOC count, ignores emptyline & comments
+cat nix.rb | sed '/^\s*#/d;/^\s*$/d' | wc -l
+```
+
 ## test
 
 ```bash

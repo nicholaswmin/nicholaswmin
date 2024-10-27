@@ -24,8 +24,6 @@ gemfile do
   gem 'kramdown', '~> 2.4.0', require: true
   gem 'kramdown-parser-gfm', '~> 1.1.0', require: true
   gem 'rouge', '~> 4.4.0', require: true
-  gem 'rss', '~> 0.3.1', require: true
-
   gem 'logger', '~> 1.6.0', require: false
 end
 
@@ -68,10 +66,16 @@ puts "\033[32m- gems installed & loaded!\e[0m"
 # --- Classes ---
 
 class Blog
-  def initialize(config, includes)
-    @config   = config
-    @includes = includes
-    @files = []
+  def initialize(opts)
+    @name = opts[:name]
+    @url = opts[:name]
+    @author = opts[:author]
+    @favicon = opts[:favicon]
+
+    @index = opts[:index]
+    @header= opts[:header]
+    @footer = opts[:footer]
+
     @pages = []
   end
   
@@ -81,29 +85,22 @@ class Blog
   
   def compile(tokens = {})
     generate_index
-    
-    @files = @files + @pages.map{ | page | page.compile(tokens) }
+    @pages.map{ _1.compile({ '{{FAVICON}}' => @favicon }) }
   end
-  
-  def add_file(file)
-    @files.push(file)
+
+  def add(pages)
+    [pages].flatten.each{ add_page(_1) }
 
     self
   end
 
-  def add_pages(pages)
-    @pages = @pages + pages
-
-    self
-  end
-
+  private
   def add_page(page)
-    @pages.push(page)
-    self
+    @pages.push(page.prepend(@header).append(@footer))
   end
   
   def generate_index
-    html = Kramdown::Document.new(@includes[:index], { input: 'GFM'})
+    html = Kramdown::Document.new(@index, { input: 'GFM'})
       .to_html + "<ul class=\"posts\">\n"
 
     # @todo use reduce & shorthand
@@ -117,183 +114,114 @@ class Blog
       html << "#{open}<a href='#{href}'>#{head}</a>#{date}#{close}" 
     }
   
-    html << "</ul>\n#{@includes[:footer]}"
+    html << "</ul>\n"
 
-    "#{@includes[:header]} #{html} #{@includes[:footer]}"
+    "#{@header} #{html} #{@footer}"
 
-    add_page(HTMLPage.new(path: '/', title: @config['site_name'], html: ))
+    add(HTMLPage.new(path: 'index.html', title: @name, html:))
     
     self
   end
   
-  def generate_rss()
-    # move this away
-    rss = RSS::Maker.make("2.0") do |maker|
-      maker.channel.author = @config["author_name"]
-      maker.channel.updated = Time.now.to_s
-      maker.channel.title = "#{@config["site_name"]} RSS Feed"
-      maker.channel.description = "Official RSS Feed for #{@config["site_url"]}"
-      maker.channel.link = @config["site_url"]
-      
-      posts.each do |post|
-        maker.items.new_item do |item|
-          item.link = "#{@config["site_url"]}/#{@config["output"]["posts"]}/#{post.link}"
-          item.title = post.title
-          item.updated = (Date.parse(post.date.to_s).to_time + 12*60*60).to_s
-          item.pubDate = date.rfc822
-          item.description = post.data
-        end
-      end
-      rss
-    end
-  end
+  #def generate_rss end #@ todo 
   
-  attr_reader :files
+  attr_reader :pages
 end
 
-
-class Blogfile
-  def initialize(path:, data:)
-    @dir = File.join(File.dirname(path), File.basename(path, ".*"))
-    @path = File.join(@dir, 'index.html')
-    @data = data
-  end
-
-  attr_reader :dir, :path, :data
-end
-
-class Page < Blogfile
+class HTMLPage
   def initialize(path:, title:, html:)
-    super(path:, data: html)
-
-    @title = title
+    @path = Pathname.is_a?(Pathname) ? path : Pathname.new(path)
+    @title = title ||= @path.basename.to_s
+    @data  = data
     @htmls = [html]
   end
   
   def compile(tokens = {})
     compiled = @htmls.reduce(:+) 
-
     @data = ({ "{{TITLE}}" => @title, "{{BYTES}}" => compiled.bytesize.to_s }
-    .merge(tokens))
-    .reduce(compiled) { _1.gsub(_2[0], _2[1]) }
+      .merge(tokens)).reduce(compiled) { _1.gsub(_2[0], _2[1].to_s) }
   
     self
   end
   
-  def add_fragment(html:, index: 0)  
-    @htmls.insert(index ||= @htmls.length, html)
-
+  def prepend(html)  
+    @htmls.unshift(html)
     self
-   end
-  
-  attr_reader :html, :dir
-end
-
-class HTMLPage < Page
-  def initialize(path:, title:, html:)
-    super
   end
   
-  attr_reader :dir, :html, :title
+  def append(html)  
+    @htmls.push(html)
+    self
+  end
+
+  attr_reader :path, :title, :data
 end
 
-class MarkdownPage < Page
-  def initialize(path:, markdown:)
-    super(path:, title: extract_title(markdown), html: Kramdown::Document.new(markdown, {
-      input: 'GFM', auto_ids: true,
-      syntax_highlighter: 'rouge'
-    }).to_html)
+class MarkdownPage < HTMLPage
+  def initialize(path:, markdown:)  
+    super(
+      path:,
+      title: parse_md_title(markdown), 
+      html: Kramdown::Document.new(markdown, {
+        input: 'GFM', auto_ids: true,
+        syntax_highlighter: 'rouge'
+      }).to_html)
   end
   
-  def extract_title(markdown)
-    lines = markdown.lines
-    lines.first&.start_with?('# ') ? lines.first[2..-1].strip : 'Blog Index'
+  def parse_md_title(markdown)
+    markdown.lines.first&.start_with?('# ') ? 
+      markdown.lines.first[2..-1].strip : 
+      'Blog Index'
+  end
+  
+  def self.from dir 
+    Pathname.glob(dir).map do | path |
+      self.new(path:, markdown: File.read(path))
+    end
+  end
+end
+
+class Page < MarkdownPage 
+  def initialize(path:, markdown:)  
+    super(path: "#{path.basename(path.extname)}.html", markdown:)
+  end
+end
+
+class Post < MarkdownPage
+  def initialize(path:, markdown:)  
+    super(path: "posts/#{path.basename(path.extname)}.html", markdown:)
+
+    @date = parse_md_date(markdown)
+    @year = @date.strftime('%b, %Y')
   end
 
-  attr_reader :dir, :html, :title
-end
-
-class MarkdownPost < MarkdownPage
-  def initialize(path:, markdown:)
-    super
-    @date = parse_date(markdown)
-    @year = @date.strftime("%b, %Y")
+  def parse_md_date(markdown)
+    Date.parse(markdown.lines[2]&.strip || '') rescue Date.today
   end
 
-  def parse_date(markdown_text)
-    Date.parse(markdown_text.lines[2]&.strip || '') rescue Date.today
-  end
-
-  attr_reader :dir, :html, :title, :link, :fname, :date, :year
-end
-
-# --- Filesystem helpers ---- 
-
-def load_file(path) 
-  { path:, data: File.read(path) }
-end
-
-# @todo guard against unnknown files
-def load_dir(path, allowed = ['.md', '.html']) 
-  Find.find(path == '/' ? './' : path)
-    .filter { allowed.include? File.extname(_1) }
-    .map { load_file(_1) }
-end
-
-def load_files(hash)
-  hash.each do |k, v|
-    hash[k] = v.is_a?(String) && File.exist?(v) ? 
-      (File.directory?(v) ? load_dir(v) : load_file(v)) : hash[k]
-    v.is_a?(Hash) ? load_files(v) : nil
-  end
-  hash
-end
-
-def write_blog(blog, dirs)
-  # ensure the build dirs exist, create them if not
-  puts "\033[36m- rebuilding dirs ...\e[0m"
-  [dirs['root'], dirs['posts']].each { FileUtils.mkdir_p(_1) }
-  # create the folder and write
-  blog.files.each { | file | 
-    puts "\033[36m- writing: #{file.dir} ...\e[0m"
-
-    FileUtils.mkdir_p(File.join(dirs['root'], file.dir))
-    File.write(File.join(dirs['root'], file.path), file.data) 
-  }
-  puts "\033[32m ok!\e[0m"
+  attr_reader :date, :year
 end
 
 # --- Build function ---- 
 
-def build(config)  
-  files = load_files(config['files'])
-  header = files['includes']['header']
-  footer = files['includes']['footer']
-  index  = files['includes']['index']
-  
-  blog = Blog.new(config, { 
-    header: header[:data], 
-    footer: footer[:data], 
-    index:  index[:data] 
+def build config
+  Blog.new({
+    index:  File.read('index.md'), 
+    header: File.read('src/header.html'), 
+    footer: File.read('src/footer.html'), 
+    ** config
   })
+  .add(Post.from('posts/**.md'))
+  .add(Page.from('pages/**.md'))
+  .compile
+  .each do | page |
+    puts "\033[36m- writing: #{page.path}\e[0m"
 
-  posts = files['input']['posts'].map {
-    MarkdownPost.new(path: _1[:path], markdown: _1[:data])
-      .add_fragment(html: header[:data], index: 0)
-      .add_fragment(html: footer[:data])
-  }
+    FileUtils.mkdir_p(File.join(config['dest'], page.path.dirname))
+    File.write(File.join(config['dest'], page.path), page.data) 
+  end
   
-  pages = files['input']['pages'].map { 
-    MarkdownPage.new(path: _1[:path], markdown: _1[:data])
-      .add_fragment(html: header[:data], index: 0)
-      .add_fragment(html: footer[:data])
-  }
-  
-  blog
-    .add_pages(pages + posts)
-    .compile({ "{{FAVICON}}" => config['favicon']  })
-  
-  write_blog(blog, config['output'])
-end
+  FileUtils.cp_r 'public', File.join(config['dest'], 'public')  
+end 
 
-build(YAML.load_file('_config.yml'))
+build YAML.load_file './_config.yml'
