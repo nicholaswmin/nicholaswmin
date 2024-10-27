@@ -19,7 +19,6 @@
 
 It's a single-file, [nix.rb][file-rb]; download & drop it in a folder:
 
-
 ## init
 
 > create a sample blog:
@@ -123,6 +122,12 @@ fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd --
 cat nix.rb | sed '/^\s*#/d;/^\s*$/d' | wc -l
 ```
 
+> filter-out `rouge`
+
+```bash
+ruby -w nix.rb 2>&1 | grep -v "rouge"
+```
+
 ## test
 
 ```bash
@@ -132,8 +137,8 @@ cat nix.rb | sed '/^\s*#/d;/^\s*$/d' | wc -l
 ## conventions
 
 - follows [Semantic HTML][semantic-html] & the [ARIA specs][aria]
-- designed for testability, written in [*idiomatic Ruby*][id-ruby].
-- [suckless philosophy][suckless]
+- designed to be unit-testable, written in [*idiomatic OOP-y Ruby*][id-ruby].
+- minimizes dependencies
 
 ## license
 

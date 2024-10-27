@@ -32,7 +32,7 @@ require 'date'
 require 'find'
 require 'yaml'
 
-puts "\033[32m- gems installed & loaded!\e[0m"
+puts "gems installed & loaded!"
 
 # This document is comprised of:
 # 
@@ -59,144 +59,150 @@ puts "\033[32m- gems installed & loaded!\e[0m"
 # - Problem
 # - Error handling
 # - Unique page class
+# - Bring RSS back
+# - Style tweaks
+# - Create `IndexPage` page as class, pass created stuff into the compile 
+#   handler. Use them to compile a `<ul>`.
 # 
-# # Style tweaks
 # - use https://rubystyle.guide/#percent-q-shorthand
 
 # --- Classes ---
 
 class Blog
-  def initialize(opts)
-    @name = opts[:name]
-    @url = opts[:name]
-    @author = opts[:author]
-    @favicon = opts[:favicon]
-
-    @index = opts[:index]
-    @header= opts[:header]
-    @footer = opts[:footer]
+  def initialize config 
+    @config = config
+    @index = config[:index]
+    @header= config[:header]
+    @footer = config[:footer]
 
     @pages = []
   end
-  
+
   def posts 
-    @pages.filter { _1.class === "MarkdownPost" }
+    @pages.filter do | page | 
+      page.class.to_s.downcase.include? 'post' 
+    end
   end
   
-  def compile(tokens = {})
+  def compile tokens = {} 
     generate_index
-    @pages.map{ _1.compile({ '{{FAVICON}}' => @favicon }) }
+
+    @pages = @pages.map do | page | 
+      page.compile({ '{{FAVICON}}' => @favicon, **tokens }) 
+    end
+        
+    @pages
   end
 
-  def add(pages)
-    [pages].flatten.each{ add_page(_1) }
+  def add pages
+    [pages].flatten.each do | page |
+      @pages.push(page.prepend(@header).append(@footer))
+    end
 
     self
   end
-
-  private
-  def add_page(page)
-    @pages.push(page.prepend(@header).append(@footer))
-  end
   
   def generate_index
-    html = Kramdown::Document.new(@index, { input: 'GFM'})
+    html = Kramdown::Document.new(@index, input: 'GFM')
       .to_html + "<ul class=\"posts\">\n"
 
     # @todo use reduce & shorthand
-    posts.each { | post | 
+    posts.each do | post | 
       open  = "<li><article>"
-      href  = "/#{post.link}"
       head  = "<h3>#{post.title}</h3>"
       date  = "<h4><time datetime='#{post.date}}'>#{post.year}<time></h4>"
       close = "</article></li>\n"
 
-      html << "#{open}<a href='#{href}'>#{head}</a>#{date}#{close}" 
-    }
+      html << "#{open}<a href='#{post.path}'>#{head}</a>#{date}#{close}" 
+    end
   
     html << "</ul>\n"
 
-    "#{@header} #{html} #{@footer}"
-
-    add(HTMLPage.new(path: 'index.html', title: @name, html:))
+    add(HTMLPage.new(
+      path: 'index.html', 
+      html: "#{@header} #{html} #{@footer}"
+    ))
     
     self
   end
-  
-  #def generate_rss end #@ todo 
-  
-  attr_reader :pages
+
+  attr_reader :config
 end
 
 class HTMLPage
-  def initialize(path:, title:, html:)
+  def initialize path:,  html:, title: 'home'
     @path = Pathname.is_a?(Pathname) ? path : Pathname.new(path)
     @title = title ||= @path.basename.to_s
-    @data  = data
+    @data = ''
     @htmls = [html]
   end
   
-  def compile(tokens = {})
-    compiled = @htmls.reduce(:+) 
-    @data = ({ "{{TITLE}}" => @title, "{{BYTES}}" => compiled.bytesize.to_s }
-      .merge(tokens)).reduce(compiled) { _1.gsub(_2[0], _2[1].to_s) }
+  def data
+    @data
+  end
   
+  def compile tokens = {}
+    compiled = @htmls.reduce :+
+    
+    @data = { 
+      **tokens, "{{TITLE}}" => @title, "{{BYTES}}" => compiled.bytesize.to_s 
+    }.reduce compiled do | compiled, (placeholder, value) | 
+      compiled = compiled.gsub(placeholder, value.to_s) 
+    end
+
     self
   end
   
-  def prepend(html)  
-    @htmls.unshift(html)
+  def prepend html  
+    @htmls.unshift html
     self
   end
   
-  def append(html)  
-    @htmls.push(html)
+  def append html  
+    @htmls.push html
     self
   end
 
-  attr_reader :path, :title, :data
+  attr_reader :path, :title
 end
 
-class MarkdownPage < HTMLPage
-  def initialize(path:, markdown:)  
+class MDPage < HTMLPage
+  def initialize path:, md:
     super(
       path:,
-      title: parse_md_title(markdown), 
-      html: Kramdown::Document.new(markdown, {
-        input: 'GFM', auto_ids: true,
-        syntax_highlighter: 'rouge'
-      }).to_html)
+      title: parse_title(md), 
+      html: Kramdown::Document.new(md, input: 'GFM').to_html)
   end
   
-  def parse_md_title(markdown)
-    markdown.lines.first&.start_with?('# ') ? 
-      markdown.lines.first[2..-1].strip : 
+  def parse_title md
+    md.lines.first&.start_with?('# ') ? 
+      md.lines.first[2..-1].strip : 
       'Blog Index'
   end
   
   def self.from dir 
     Pathname.glob(dir).map do | path |
-      self.new(path:, markdown: File.read(path))
+      self.new(path:, md: File.read(path))
     end
   end
 end
 
-class Page < MarkdownPage 
-  def initialize(path:, markdown:)  
-    super(path: "#{path.basename(path.extname)}.html", markdown:)
+class Page < MDPage 
+  def initialize path:, md: 
+    super(path: "#{path.basename(path.extname)}.html", md:)
   end
 end
 
-class Post < MarkdownPage
-  def initialize(path:, markdown:)  
-    super(path: "posts/#{path.basename(path.extname)}.html", markdown:)
+class Post < MDPage
+  def initialize path:, md: 
+    super(path: "posts/#{path.basename(path.extname)}.html", md:)
 
-    @date = parse_md_date(markdown)
-    @year = @date.strftime('%b, %Y')
+    @date = parse_date md
+    @year = @date.strftime '%b, %Y'
   end
-
-  def parse_md_date(markdown)
-    Date.parse(markdown.lines[2]&.strip || '') rescue Date.today
+  
+  def parse_date md
+    Date.parse(md.lines[2]&.strip || '') rescue Date.today
   end
 
   attr_reader :date, :year
@@ -211,11 +217,10 @@ def build config
     footer: File.read('src/footer.html'), 
     ** config
   })
-  .add(Post.from('posts/**.md'))
-  .add(Page.from('pages/**.md'))
-  .compile
+  .add(Post.from('posts/**.md') + Page.from('pages/**.md'))
+  .compile()
   .each do | page |
-    puts "\033[36m- writing: #{page.path}\e[0m"
+    puts "built: #{page.path}"
 
     FileUtils.mkdir_p(File.join(config['dest'], page.path.dirname))
     File.write(File.join(config['dest'], page.path), page.data) 
