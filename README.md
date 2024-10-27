@@ -27,6 +27,21 @@ It's a single-file, [nix.rb][file-rb]; download & drop it in a folder:
 ruby nix.rb --init
 ```
 
+### missing ruby?
+
+Ruby v2+ is included by default; this just upgrades it to
+latest version:
+
+```bash
+brew install ruby
+```
+
+or
+
+```bash
+sudo apt-get install ruby-full
+```
+
 ## blog
 
 add [markdown][gfm] in `posts/`, then:
@@ -50,9 +65,8 @@ outputs all `HTML` in `/build`.
 
 and visit: [`https://<username>.github.io/<repo>`](https://<username>.github.io/<repo>)
 
-```bash
-brew install ruby
-```
+> **note:** you obvs. need to change `<username>` & `<repo-name>` to match
+> your own values
 
 ## usage 
 
@@ -142,9 +156,9 @@ ruby -w nix.rb 2>&1 | grep -v "rouge"
 
 ## conventions
 
-- follows [Semantic HTML][semantic-html] & the [ARIA specs][aria]
-- designed to be unit-testable, written in [*idiomatic OOP-y Ruby*][id-ruby].
-- minimizes dependencies
+- [Semantic HTML][semantic-html] & the [ARIA specs][aria]
+- designed for unit-testing, SOLID, in [*idiomatic OOP-y Ruby*][id-ruby].
+- minimally scoped, no deps, stupid
 
 ## license
 
@@ -163,6 +177,6 @@ ruby -w nix.rb 2>&1 | grep -v "rouge"
 [file-rb]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
 [rouge]: https://github.com/rouge-ruby/rouge
 
-[suckless]: https://suckless.org/philosophy/
+[solid]: https://simple.wikipedia.org/wiki/SOLID_(object-oriented_design)
 [semantic-html]: https://html.spec.whatwg.org/multipage/#toc-dom
 [aria]: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA
