@@ -54,23 +54,34 @@ puts "gems installed & loaded!"
 # and generate directories/write files out of them.
 # 
 # @TODO
-# - An init method
-# - Tests
-# - Problem
-# - Error handling
-# - Unique page class
-# - Bring RSS back
-# - Style tweaks
-# - Create `IndexPage` page as class, pass created stuff into the compile 
-#   handler. Use them to compile a `<ul>`.
-# 
-# - use https://rubystyle.guide/#percent-q-shorthand
+# - [ ] An init method
+# - [ ] Tests
+# - [ ] Error handling
+# - [ ] Unique page class
+# - [ ] Bring RSS back
+# - [ ] Style tweaks
+# - [ ] Create `IndexPage` page as class, pass created stuff into the compile 
+#       handler. Use them to compile a `<ul>`.
+# - [ ] use https://rubystyle.guide/#percent-q-shorthand
+# - [ ] Use option parser for CLI args: https://ruby-doc.org/stdlib-2.7.1/libdoc/optparse/rdoc/OptionParser.html
+
 
 # --- Classes ---
 
+# The main class. It holds all pages.
+# When `compile` is called it compiles every page
+# and returns a list of `Files`. 
+# 
+# Each `File` has a `path` & `contents` that, 
+# if written as a file, will constitute a 
+# fully-working website.
+
 class Blog
+  attr_reader :config
+
   def initialize config 
     @config = config
+
     @index = config[:index]
     @header= config[:header]
     @footer = config[:footer]
@@ -87,146 +98,176 @@ class Blog
   def compile tokens = {} 
     generate_index
 
-    @pages = @pages.map do | page | 
-      page.compile({ '{{FAVICON}}' => @favicon, **tokens }) 
+    res = @pages.map do | p | 
+      p.compile({ '{{FAVICON}}' => @favicon, **tokens }) 
     end
-        
-    @pages
+    
+    res = @pages + @pages.map do | p | p.assets end
+    
+    res.flatten.uniq do | p | p.path end
   end
 
   def add pages
     [pages].flatten.each do | page |
-      @pages.push(page.prepend(@header).append(@footer))
+      @pages.push(page.prepend(@header).append(@footer).append(page.assets))
     end
-
     self
   end
   
   def generate_index
-    html = Kramdown::Document.new(@index, input: 'GFM')
-      .to_html + "<ul class=\"posts\">\n"
-
-    # @todo use reduce & shorthand
-    posts.each do | post | 
-      open  = "<li><article>"
-      head  = "<h3>#{post.title}</h3>"
-      date  = "<h4><time datetime='#{post.date}}'>#{post.year}<time></h4>"
-      close = "</article></li>\n"
-
-      html << "#{open}<a href='#{post.path}'>#{head}</a>#{date}#{close}" 
+    list = posts.reduce(format('%<main>s \n <ul class="%<classname>s">', {
+      main: Kramdown::Document.new(@index, input: 'GFM').to_html,
+      classname: 'posts'
+    })) do | list, post | 
+      list << format(
+        '%<open>s<a href="/%<path>s">%<head>s</a>%<date>s%<close>s', {
+          open: '<li><article>',
+          head: format('<h3>%<title>s</h3>', { title: post.title }),
+          path: post.path,
+          date: format('<h4><time datetime="%<date>s">%<year>s<time></h4>', {
+            date: post.date, year: post.year
+          }),
+          close: '</article></li>'
+        }
+      ) << '</ul>'
     end
-  
-    html << "</ul>\n"
 
-    add(HTMLPage.new(
-      path: 'index.html', 
-      html: "#{@header} #{html} #{@footer}"
-    ))
-    
+    add(HTMLPage.new(path: 'index.html', html: list))
+
     self
   end
+end
 
-  attr_reader :config
+class Asset 
+  attr_reader :path, :contents
+  
+  def initialize filename, contents
+    @path = Pathname.new("public/#{filename.split('/').last}")
+    @contents = contents
+  end
+end
+
+class CSS < Asset 
+  def to_str
+    format('<link rel="stylesheet" href="%<path>s"></link>', path: @path)
+  end
 end
 
 class HTMLPage
-  def initialize path:,  html:, title: 'home'
-    @path = Pathname.is_a?(Pathname) ? path : Pathname.new(path)
+  attr_reader :path, :assets, :title
+
+  def initialize path:, html:, assets: [], title: 'home'
+    @path = path.is_a?(Pathname) ? path : Pathname.new(path)
+    @assets = assets
     @title = title ||= @path.basename.to_s
-    @data = ''
+    @contents = ''
     @htmls = [html]
   end
-  
-  def data
-    @data
+
+  def contents
+    @contents
   end
   
   def compile tokens = {}
     compiled = @htmls.reduce :+
-    
-    @data = { 
-      **tokens, "{{TITLE}}" => @title, "{{BYTES}}" => compiled.bytesize.to_s 
+
+    @contents = { 
+      **tokens, "{{TITLE}}" => @title, 
+      "{{BYTES}}" => compiled.bytesize.to_s 
     }.reduce compiled do | compiled, (placeholder, value) | 
       compiled = compiled.gsub(placeholder, value.to_s) 
     end
 
-    self
-  end
-  
-  def prepend html  
-    @htmls.unshift html
-    self
-  end
-  
-  def append html  
-    @htmls.push html
-    self
-  end
+    
+    @htmls = []
 
-  attr_reader :path, :title
+    self
+  end
+  
+  def prepend htmls  
+    [htmls].flatten.each do | html |
+      @htmls.unshift html
+    end
+    
+    self
+  end
+  
+  def append htmls  
+    [htmls].flatten.each do | html |
+      @htmls.push html
+    end
+
+    self
+  end  
 end
 
+# --- Userland (supposedly) ---- 
+
 class MDPage < HTMLPage
-  def initialize path:, md:
+  def initialize path:, markdown:
     super(
       path:,
-      title: parse_title(md), 
-      html: Kramdown::Document.new(md, input: 'GFM').to_html)
+      title: parse_title(markdown), 
+      html: Kramdown::Document.new(markdown, input: 'GFM').to_html)
   end
   
-  def parse_title md
-    md.lines.first&.start_with?('# ') ? 
-      md.lines.first[2..-1].strip : 
+  def parse_title markdown
+    markdown.lines.first&.start_with?('# ') ? 
+      markdown.lines.first[2..-1].strip : 
       'Blog Index'
   end
-  
-  def self.from dir 
-    Pathname.glob(dir).map do | path |
-      self.new(path:, md: File.read(path))
+
+  def self.from reader, glob 
+    Pathname.glob(glob).map do | path |
+      self.new(path:, markdown: reader.call(path) )
     end
   end
 end
 
 class Page < MDPage 
-  def initialize path:, md: 
-    super(path: "#{path.basename(path.extname)}.html", md:)
+  def initialize path:, markdown: 
+    super(path: "#{path.basename(path.extname)}.html", markdown:)
   end
 end
 
 class Post < MDPage
-  def initialize path:, md: 
-    super(path: "posts/#{path.basename(path.extname)}.html", md:)
+  attr_reader :date, :year
 
-    @date = parse_date md
+  def initialize path:, markdown:, assets: []
+    super(path: "posts/#{path.basename(path.extname)}.html", markdown:)
+    @assets = [
+      CSS.new('hl.css', Rouge::Themes::Github.mode(:light).render(scope: '.hl'))
+    ]
+    
+    @date = Date.parse(markdown.lines[2]&.strip || '') rescue Date.today
     @year = @date.strftime '%b, %Y'
   end
-  
-  def parse_date md
-    Date.parse(md.lines[2]&.strip || '') rescue Date.today
-  end
-
-  attr_reader :date, :year
 end
 
 # --- Build function ---- 
 
 def build config
+  reader_fn = Proc.new do | path | File.read path end
+
   Blog.new({
     index:  File.read('index.md'), 
     header: File.read('src/header.html'), 
     footer: File.read('src/footer.html'), 
     ** config
   })
-  .add(Post.from('posts/**.md') + Page.from('pages/**.md'))
-  .compile()
+  .add(Post.from(reader_fn, 'posts/**.md'))
+  .add(Page.from(reader_fn, 'pages/**.md'))
+  .compile({ "{{FOO}}" => 'BAR' })
   .each do | page |
-    puts "built: #{page.path}"
+    puts "writes: #{page.path}"
 
     FileUtils.mkdir_p(File.join(config['dest'], page.path.dirname))
-    File.write(File.join(config['dest'], page.path), page.data) 
+    File.write(File.join(config['dest'], page.path), page.contents) 
   end
+
+  FileUtils.cp_r 'public/.', File.join(config['dest'], 'public')  
   
-  FileUtils.cp_r 'public', File.join(config['dest'], 'public')  
+  puts "result: OK"
 end 
 
 build YAML.load_file './_config.yml'

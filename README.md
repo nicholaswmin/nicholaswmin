@@ -110,7 +110,13 @@ brew install fswatch
 then run:
 
 ```js
-fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd -- build
+fswatch -o -r -d ./ -e build | xargs -n1 -I{} ruby nix.rb
+```
+
+or to build & serve *simultaneously*:
+
+```bash
+fswatch -o -r -d ./ -e build | xargs -n1 -I{} ruby nix.rb & ruby -run -e httpd -- build
 ```
 
 ## contributing
@@ -122,7 +128,7 @@ fswatch -o -r -d ./ -e build | xargs -n1 -I{} make build & ruby -run -e httpd --
 cat nix.rb | sed '/^\s*#/d;/^\s*$/d' | wc -l
 ```
 
-> filter-out `rouge`
+> filter-out [`rouge`][rouge] ruby warnigns
 
 ```bash
 ruby -w nix.rb 2>&1 | grep -v "rouge"
@@ -155,6 +161,7 @@ ruby -w nix.rb 2>&1 | grep -v "rouge"
 [id-ruby]: https://franzejr.github.io/best-ruby/index.html
 [pygments]: https://pygments.org/
 [file-rb]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
+[rouge]: https://github.com/rouge-ruby/rouge
 
 [suckless]: https://suckless.org/philosophy/
 [semantic-html]: https://html.spec.whatwg.org/multipage/#toc-dom
