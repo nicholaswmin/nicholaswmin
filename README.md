@@ -105,7 +105,7 @@ additionally:
 - css are in `public/style.css`
 - config site via `_config.rb`
 
-## Serve it locally
+## serve locally
 
 ```bash
 ruby -run -e httpd -- build
