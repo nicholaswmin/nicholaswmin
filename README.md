@@ -162,7 +162,7 @@ ruby -w nix.rb 2>&1 | grep -v "rouge"
 
 ## license
 
-[The MIT License](https://spdx.org/licenses/MIT)
+[MIT](https://spdx.org/licenses/MIT)
 
 [club]: https://1kb.club/
 [ruby]: https://ruby-doc.org/3.3.4/
