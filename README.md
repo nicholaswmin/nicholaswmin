@@ -2,7 +2,7 @@
 
 > [WIP]
 >
-> [hyper minimal][concise] blogging framework written in Ruby,   
+> [hyper minimal][concise] static-site framework,   
 > inspired by Bradley Taunt's [wruby][wruby] & the [1kb club][club]
 >
 > `nix` means *nothing* in rejective form.
