@@ -85,22 +85,20 @@ class Site
     end
   end
   
-  def ctx 
-    { layouts: @layouts, posts: }
-  end
-  
   def use layouts
     @layouts = (layouts.map do | layout | [layout.name, layout] end).to_h
 
     self
   end
   
-  def compile options = { variables: {} } 
-    pages = @pages.map do 
-      | page | page.compile({ **ctx, variables: options[:variables] }) 
+  def compile variables: {}
+    pages = @pages.map do | page | page.compile(
+      layouts: @layouts, 
+      ctx: { posts:, variables: }
+    ) 
     end
     
-    (pages + @pages.map(&:use_assets))
+    (pages + @pages.map(&:assets))
       .flatten.uniq do | page | page.path end
   end
 
@@ -133,35 +131,38 @@ end
 class HTMLPage
   attr_reader :path, :title, :contents, :assets
 
-  def initialize path:, html: '', assets: [], title: 'home'
+  def initialize path:, assets: [], title:
     @path = Pathname.new(path.to_s)
-    @html = html
-
+    @type = self.class.to_s.downcase
+    @name = @path.basename(@path.extname).to_s
     @title = title ||= @path.basename.to_s
-    @assets = assets
-    @contents = ''
+    @contents = nil
   end
 
-  def compile ctx    
-    html = format '%<h>s <main class="%<cn>s %<fn>s">%<m>s</main>%<f>s%<a>s', { 
-      t: 'main',
-      h: ctx[:layouts]['header'],
-      m: to_html(ctx),
-      f: ctx[:layouts]['footer'],
-      a: use_assets.reduce('', :+),
-      cn: self.class.to_s.downcase,
-      fn: @path.basename(@path.extname).to_s
-    }
+  def compile layouts:, ctx:   
+    html = <<~BODY
+      #{layouts['header']}
+        <main class="#{@type} #{@name}">
+          #{to_html(ctx)}
+        </main>
+       #{layouts['footer']}
+       #{[assets].flatten.reduce('', :+)}
+      BODY
+
+    @contents = replace html, ctx[:variables]
     
-    @contents = { 
-      **ctx[:variables], 
+    self
+  end
+  
+  #todo use erb?
+  private def replace html, variables
+    { 
+      **variables,
       "title" => @title, 
       "bytes" => html.bytesize.to_s 
     }.reduce html do | html, (variable, value) | 
       html = html.gsub('{{' + variable.to_s + '}}', value.to_s) 
     end
-
-    self
   end
   
   private def to_list items, to_list_item
@@ -178,7 +179,7 @@ class HTMLPage
     raise StandardError.new 'abstract class' 
   end
   
-  def use_assets 
+  def assets 
     []  
   end
 end
@@ -245,13 +246,12 @@ class Post < MarkdownPage
     @link = @path.dirname
   end
   
-  def use_assets
-    [ 
-      CSS.new(
-        filename: 'highlights.css', 
-        contents: Rouge::Themes::Github.mode(:light).render(scope: '.highlight')
-      ) 
-    ]
+  def assets
+    CSS.new(
+      filename: 'highlights.css', 
+      contents: Rouge::Themes::Github.mode(:light)
+        .render(scope: '.highlight') 
+    )
   end
 end
 
@@ -280,7 +280,7 @@ end
 
 # --- Build function ---- 
 
-def files dir 
+def read dir 
   Pathname.glob(dir).map do | path | { path:, file: File.read(path) } end
 end
 
@@ -297,11 +297,11 @@ end
 
 def build config
   Site.new(config:)
-    .use(files('_layouts/*').map(&Layout.from_file))
-    .add(files('posts/**.md').map(&Post.from_file))
-    .add(files('pages/**.md').map(&Page.from_file))
-    .add(files('index.md').map(&Index.from_file))
-    .compile({ variables: config })
+    .use(read('_layouts/*').map(&Layout.from_file))
+    .add(read('posts/**.md').map(&Post.from_file))
+    .add(read('pages/**.md').map(&Page.from_file))
+    .add(read('index.md').map(&Index.from_file))
+    .compile(variables: config)
     .each(&write(config['dest']))
 
   copy 'public/.', config['dest']

@@ -1,9 +1,8 @@
 # work 
 
-Nicholas Kyriakides
-[@nicholaswmin][gh-url]
-<nik@io.com>
-Nicosia, 1075
+{{author_name}}
+[{{author_user}}][author-url]
+{{author_sub}}
 
  
 - ### Bitpaper
@@ -41,5 +40,4 @@ Nicosia, 1075
   #### London, UK  
   #### 2009 - 2013
 
-[gh-url]: https://github.com/nicholaswmin
-[paperJS]: http://paperjs.org/
+[author-url]: {{author_url}}

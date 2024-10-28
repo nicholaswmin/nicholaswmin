@@ -1,4 +1,9 @@
-name: 'a blog'
-author: 'nicholaswmin'
+name: 'nicholaswmin'
 favicon: 🚜
+
+author_name: 'Nicholas Kyriakides'
+author_user: 'nicholaswmin'
+author_url: 'https://github.com/nicholaswmin'
+author_sub: 'Nicosia, 1075'
+
 dest: './build'
