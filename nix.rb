@@ -316,6 +316,8 @@ def serve port, root
   server.start
 end
 
+# --- Program Main -----
+
 config = YAML.load_file './_config.yml'
 
 build config
