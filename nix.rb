@@ -315,7 +315,7 @@ def serve port, root
 end
 
 # --- Program Main -----
-puts "gems: OK"
+puts "- bundle: OK"
 
 config = YAML.load_file './_config.yml'
 
