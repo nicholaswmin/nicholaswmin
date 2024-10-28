@@ -307,9 +307,9 @@ def build config
   copy 'public/.', config['dest']
 end 
 
-def serve port, root, dest
+def serve port, root
   server = WEBrick::HTTPServer.new :Port => port, :DocumentRoot => root
-  server.mount dest, WEBrick::HTTPServlet::FileHandler, 'build/public/'
+  server.mount 'public', WEBrick::HTTPServlet::FileHandler, "#{root}/public/"
 
   trap 'INT' do server.shutdown exit true; end
 
@@ -319,4 +319,4 @@ end
 build YAML.load_file './_config.yml'
 puts "\033[1;32m- build: OK - \e[0m"
 puts "\033[1;34m- server starting at: 8000 - \e[0m"
-serve 8081, 'build', 'public'
+serve 8081, 'build'
