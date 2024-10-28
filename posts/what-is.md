@@ -3,7 +3,12 @@
 21-10-2021
 
 This site is an example of minimalism in software design; otherwise 
-known as **conciceness**.
+known as **conciseness**. 
+
+It's generated using a minimal site generator, called [nix][nix], 
+which itself is ~150 lines of pure [ruby][ruby] code.
+
+---
 
 in common usage and linguistics, concision  (also called conciseness, 
 succinctness,[^1] terseness, brevity, or laconicism) is a communication 
@@ -110,3 +115,8 @@ This project was inspired by: The [1kb club][1kb].
 [^9]:  Patrick Dunleavy, Authoring a PhD: 
       How to Plan, Draft, Write and Finish a Doctoral Thesis or 
       sDissertation (2003), p. 273, ISBN 023036800X.
+      
+      
+      
+[ruby]: https://www.ruby-lang.org/en/
+[nix]: https://github.com/nicholaswmin/nix
