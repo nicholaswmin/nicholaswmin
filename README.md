@@ -111,7 +111,7 @@ additionally:
 ruby -run -e httpd -- build
 ```
 
-## Rebuild on file change
+## file watching
 
 > tired of pressing `save` on every change?
 
@@ -157,8 +157,8 @@ ruby -w nix.rb 2>&1 | grep -v "rouge"
 ## conventions
 
 - [Semantic HTML][semantic-html] & the [ARIA specs][aria]
-- designed for unit-testing, SOLID, in [*idiomatic OOP-y Ruby*][id-ruby].
-- minimally scoped, no deps, stupid
+- designed for unit-testing, in [*idiomatic*][id-ruby] OOP-y Ruby
+- minimally scoped, no deps, no fluff
 
 ## license
 
