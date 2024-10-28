@@ -60,7 +60,8 @@ require 'yaml'
 # - [ ] Use option parser for CLI args: https://ruby-doc.org/stdlib-2.7.1/libdoc/optparse/rdoc/OptionParser.html
 # - [ ] consider ERB for templating  
 # - [ ] fix dark mode css on code snippets in post
-
+# - [ ] support nested config for variables
+# 
 # --- Classes ---
 
 # The main class. It holds all `Page`-like instances.
@@ -282,8 +283,12 @@ end
 
 # --- Build function ---- 
 
-def read dir 
-  Pathname.glob(dir).map do | path | 
+def file path 
+  [[ path, File.read(path) ]]
+end
+
+def files dir 
+  Pathname.glob(dir).filter(&noindex?).map do | path | 
     [ path, File.read(path) ] 
   end
 end
@@ -299,12 +304,17 @@ def copy glob, dest
   FileUtils.cp_r glob, File.join(dest, Pathname.new(glob).dirname) 
 end
 
+def noindex? 
+  Proc.new do | path | ! path.to_s.include? 'index' end 
+end
+
+
 def build config
   Site.new(config:)
-    .use(read('_layouts/*').map(&Layout.from_entry))
-    .add(read('posts/**.md').map(&Post.from_entry))
-    .add(read('pages/**.md').map(&Page.from_entry))
-    .add(read('index.md').map(&Index.from_entry))
+    .use(files('_layouts/*').map(&Layout.from_entry))
+    .add(files('posts/**.md').map(&Post.from_entry))
+    .add(files('pages/**.md').map(&Page.from_entry))
+    .add(file('pages/index.md').map(&Index.from_entry))
     .compile(variables: config)
     .each(&write(config['dest']))
 
