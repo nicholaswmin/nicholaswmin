@@ -316,7 +316,10 @@ def serve port, root
   server.start
 end
 
-build YAML.load_file './_config.yml'
+config = YAML.load_file './_config.yml'
+
+build config
 puts "\033[1;32m- build: OK - \e[0m"
+
 puts "\033[1;34m- server starting at: 8000 - \e[0m"
-serve 8081, 'build'
+serve 8081, config[:dest]
