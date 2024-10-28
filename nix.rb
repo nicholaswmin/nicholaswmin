@@ -61,6 +61,8 @@ require 'yaml'
 # - [ ] consider ERB for templating  
 # - [ ] fix dark mode css on code snippets in post
 # - [ ] support nested config for variables
+# - [ ] All writable should extend Writable? (too much fs coupling?)
+# - [ ] Header/Footer are layouts too?
 # 
 # --- Classes ---
 
@@ -114,18 +116,31 @@ class Site
   end
 end
 
+class Layout 
+  attr_reader :name
+
+  def initialize path:, html:
+    @name = path.basename(path.extname).to_s
+    @html = html
+  end
+  
+  def self.from_entry
+    Proc.new do | entry | 
+      self.new path: entry[0], html: entry[1]  
+    end
+  end
+  
+  def to_s
+    @html
+  end
+end
+
 class Asset 
   attr_reader :path, :contents
   
   def initialize filename:, contents:
     @path = Pathname.new("public/#{filename.split('/').last}")
     @contents = contents
-  end
-end
-
-class CSS < Asset 
-  def to_str
-    format('<link rel="stylesheet" href="/%<path>s"></link>', path: @path)
   end
 end
 
@@ -160,7 +175,7 @@ class HTMLPage
     { 
       **variables,
       "title" => @title, 
-      "bytes" => html.bytesize.to_s 
+      "bytes" => html.gsub(/\s+/, '').bytesize.to_s 
     }.reduce html do | html, (variable, value) | 
       html = html.gsub('{{' + variable.to_s + '}}', value.to_s) 
     end
@@ -185,26 +200,13 @@ class HTMLPage
   end
 end
 
-class Layout 
-  attr_reader :name
+# --- Userland (supposedly) ---- 
 
-  def initialize path:, html:
-    @name = path.basename(path.extname).to_s
-    @html = html
-  end
-  
-  def self.from_entry
-    Proc.new do | entry | 
-      self.new path: entry[0], html: entry[1]  
-    end
-  end
-  
-  def to_s
-    @html
+class CSS < Asset 
+  def to_str
+    format('<link rel="stylesheet" href="/%<path>s"></link>', path: @path)
   end
 end
-
-# --- Userland (supposedly) ---- 
 
 # @TODO this feels wrong?
 class MarkdownPage < HTMLPage
@@ -281,17 +283,13 @@ class Index < MarkdownPage
   end
 end
 
-# --- Build function ---- 
+# --- File helpers ---- 
 
-def file path 
-  [[ path, File.read(path) ]]
-end
+to_entry = Proc.new do | path | [ path, File.read(path) ]  end
+not_index = Proc.new do | path | ! path.to_s.include? 'index' end 
 
-def files dir 
-  Pathname.glob(dir).filter(&noindex?).map do | path | 
-    [ path, File.read(path) ] 
-  end
-end
+def file (path) to_entry.call(path) end
+def files (dir) Pathname.glob(dir).filter(&not_index?).map(&to_entry) end
 
 def write dest
   Proc.new do | page | 
@@ -304,17 +302,14 @@ def copy glob, dest
   FileUtils.cp_r glob, File.join(dest, Pathname.new(glob).dirname) 
 end
 
-def noindex? 
-  Proc.new do | path | ! path.to_s.include? 'index' end 
-end
-
+# --- Build function ---- 
 
 def build config
   Site.new(config:)
     .use(files('_layouts/*').map(&Layout.from_entry))
     .add(files('posts/**.md').map(&Post.from_entry))
     .add(files('pages/**.md').map(&Page.from_entry))
-    .add(file('pages/index.md').map(&Index.from_entry))
+    .add(file['pages/index.md'].map(&Index.from_entry))
     .compile(variables: config)
     .each(&write(config['dest']))
 
@@ -330,7 +325,7 @@ def serve port, dir
   server.start
 end
 
-# --- Program Main -----
+# --- Main -----
 
 puts "- deps.: OK"
 
