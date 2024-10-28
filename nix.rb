@@ -34,8 +34,6 @@ require 'date'
 require 'find'
 require 'yaml'
 
-puts "gems installed & loaded!"
-
 # This document is expected (might be out of date) 
 # to consist of:
 # 
@@ -317,11 +315,12 @@ def serve port, root
 end
 
 # --- Program Main -----
+puts "gems: OK"
 
 config = YAML.load_file './_config.yml'
 
 build config
 puts "\033[1;32m- build: OK - \e[0m"
 
-puts "\033[1;34m- server starting at: 8000 - \e[0m"
+puts "\033[1;34m- serve: OK - \e[0m"
 serve 8081, config[:dest]
