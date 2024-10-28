@@ -6,9 +6,10 @@
   --font-color: #555; 
   --font-color-lighter: #777;
   --font-color-lightest: #ccc;
-  --font-size: 13x; 
+  --font-size: 14x; 
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-color: #222; 
@@ -19,6 +20,7 @@
     --font-color-lightest: #666;
   }
 }
+*/
 
 /* Resets */
 

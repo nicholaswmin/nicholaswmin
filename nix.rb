@@ -261,20 +261,20 @@ class Index < MarkdownPage
   end
 
   def to_html ctx
-    to_list ctx[:posts], to_list_item = -> (list, post) { 
+    super(ctx) + to_list(ctx[:posts], to_list_item = -> (list, post) { 
       list << post = <<~BODY
       <li>
         <a href="#{post.link}">
           <h3>#{post.title}</h3> 
           <small>
             <time datetime="#{post.date}">
-              #{post.date.strftime("%b, %Y")}
+              #{post.date.strftime('%b, %Y')}
             </time>
           </small>
         </a>
       </li>
       BODY
-    }
+    })
   end
 end
 
