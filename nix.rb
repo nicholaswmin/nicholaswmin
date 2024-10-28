@@ -311,10 +311,9 @@ def build config
   copy 'public/.', config['dest']
 end 
 
-def serve port, root
-  root = root.sub('./', '')
-  server = WEBrick::HTTPServer.new :Port => port, :DocumentRoot => root
-  server.mount 'public', WEBrick::HTTPServlet::FileHandler, "#{root}/public/"
+def serve port, dir
+  server = WEBrick::HTTPServer.new :Port => port, :DocumentRoot => dir
+  server.mount 'public', WEBrick::HTTPServlet::FileHandler, "#{dir}/public/"
 
   trap 'INT' do server.shutdown exit true; end
 
@@ -331,4 +330,4 @@ build config
 puts "\033[1;32m- build: OK - \e[0m"
 
 puts "\033[1;34m- serve: OK - \e[0m"
-serve 8081, config['dest']
+serve 8081, config['dest'].sub('./', '')
