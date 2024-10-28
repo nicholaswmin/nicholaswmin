@@ -1,5 +1,4 @@
-dest: './build'
-url: 'https://nicholaswmin.github.io'
 name: 'a blog'
 author: 'nicholaswmin'
 favicon: 🚜
+dest: './build'

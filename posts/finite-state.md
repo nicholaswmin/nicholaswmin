@@ -1,6 +1,8 @@
-[![tests][testb]][tests] [![ccovt][cocov]](#tests)
+# finite-state machine
 
-# fsm
+2023-12-10
+
+[![tests][testb]][tests] [![ccovt][cocov]](#tests)
 
 > A [finite-state machine][fsm]  
 >

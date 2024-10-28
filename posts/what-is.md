@@ -1,4 +1,4 @@
-# What is this?
+# what is this?
 
 21-10-2021
 
@@ -33,27 +33,11 @@ succinctness of texts using semantic analysis.[^6]
 
 From [The Elements of Style][eos], [William Strunk][ws]
 
-Minimalism is not the absence of function; it is a very strict focus on what 
-is important. Running out of gas on the highway is not an expression of
-minimalism in gasoline consumption. You just run out of gas because you are 
-the type of person to run out of gas.
-
-### A common theme
-
-Minimalism in i.e: Interior Design means your guests get to sit comfortably, 
-there's a feeling that it happens a bit like magic - the whole setup 
-doesn't look like it could accomodate people like that, yet there it is. 
-
-In it's best implementation, your guests would be unaware of the functions
-themselves as the entire setup is immersive enough for them to get on
-with whatever they were supposed to be doing without stopping to think about
-the tool itself, in this case the furniture.
-
 ### Implementation
 
 This blog has 3 pages:
 
-- A post list, the authors CV
+- A post list, the authors CV and the **post itself**
  
 - It is focused. it skips fluff and only includes the bare minimums.
 - It does one thing but does it well. Semantic HTML, a tiny CSS file with
@@ -61,12 +45,14 @@ This blog has 3 pages:
   ARIA accessibility-standards checked, and above all it's tiny hyper 
   performant size.It's file size could be measured in bytes
 
-What you've just read was filler text, my thoughts and some wikipedia
-copypasta. This page seems to render fine. Thanks.
+What you've just read was filler text, half of it being complete bullshit. 
+This page seems to render fine. 
 
-By the way this is how images render here:
+Thanks for reading.
 
-![An imae of Felix the Housecat, a cartoon](/public/felix.png "Felix the Cat")
+Heres a picture of Felix The Housecat to check how images render:
+
+![An imae of Felix the Housecat, a cartoon](/public/felix.webp "Felix the Cat")
 
 
 This project was inspired by: The [1kb club][1kb].

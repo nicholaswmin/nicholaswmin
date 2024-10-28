@@ -73,6 +73,7 @@ nav, footer {
   ul { display: block; margin: 0; padding-left: 0; }
 	li { display: inline-block; margin-right: 2em;  }
 	li a { color: var(--font-color); }
+	small { display: inline-block; margin-top: 2em; }
 }
 
 /* Postpage: title & date */

@@ -1,4 +1,4 @@
-# Work 
+# work 
 
 Nicholas Kyriakides
 [@nicholaswmin][gh-url]

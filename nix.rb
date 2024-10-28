@@ -16,12 +16,13 @@
 # been possible without "wruby".
 # 
 # Check out wruby here: https://git.btxx.org/wruby/tree/
-$VERBOSE = true
+#$VERBOSE = true
 
 require 'bundler/inline'
 
 gemfile do
   source 'https://rubygems.org'
+  gem 'webrick', '~> 1.8.2', require: true
   gem 'kramdown', '~> 2.4.0', require: true
   gem 'kramdown-parser-gfm', '~> 1.1.0', require: true
   gem 'rouge', '~> 4.4.0', require: true
@@ -54,14 +55,13 @@ puts "gems installed & loaded!"
 # - [ ] An init method
 # - [ ] Tests
 # - [ ] Error handling
-# - [ ] Unique page class
+# - [x] Unique page class
 # - [ ] Bring RSS back
 # - [ ] Style tweaks
-# - [ ] Create `IndexPage` page as class, pass created stuff into the compile 
-#       handler. Use them to compile a `<ul>`.
 # - [ ] use https://rubystyle.guide/#percent-q-shorthand
 # - [ ] Use option parser for CLI args: https://ruby-doc.org/stdlib-2.7.1/libdoc/optparse/rdoc/OptionParser.html
-
+# - [ ] consider ERB for templating  
+# - [ ] fix dark mode css on code snippets in post
 
 # --- Classes ---
 
@@ -70,21 +70,13 @@ puts "gems installed & loaded!"
 # - When `compile` is called it compiles every page
 #   and returns a list of `Files`-like instances,
 #   which is the blog pages plus any deduped assets.
-#
-class Blog
-  attr_reader :config
 
-  def initialize config 
-    @config = config
-
-    @index = config[:index]
-    @header= config[:header]
-    @footer = config[:footer]
-
+class Site
+  # @todo named params only
+  def initialize config:
+    @config = config.clone
+    @layouts = []
     @pages = []
-    @tokens = { 
-      '{{FAVICON}}' => config['favicon'],
-    }
   end
 
   def posts 
@@ -93,52 +85,40 @@ class Blog
     end
   end
   
-  def compile tokens = {} 
-    generate_index
-
-    res = @pages.map do | p | 
-      p.compile({ ** @tokens, **tokens }) 
-    end
-    
-    res = @pages + @pages.map do | p | p.assets end
-    
-    res.flatten.uniq do | p | p.path end
+  def ctx 
+    { layouts: @layouts, posts: }
   end
+  
+  def use layouts
+    @layouts = (layouts.map do | layout | [layout.name, layout] end).to_h
 
-  def add pages
-    [pages].flatten.each do | page |
-      @pages.push(page.prepend(@header).append(@footer).append(page.assets))
-    end
     self
   end
   
-  def generate_index
-    list = posts.reduce(format('%<main>s <ul class="%<classname>s">', {
-      main: Kramdown::Document.new(@index, input: 'GFM').to_html,
-      classname: 'posts'
-    })) do | list, post | 
-      list << format(
-        '%<open>s<a href="/%<path>s">%<head>s</a>%<date>s%<close>s', {
-          open: '<li><article>',
-          head: format('<h3> %<title>s </h3>', { title: post.title }),
-          path: post.path,
-          date: format('<h4><time datetime="%<date>s">%<year>s<time></h4>', {
-            date: post.date, year: post.year
-          }),
-          close: '</article></li>'
-      })
+  def compile options = { variables: {} } 
+    pages = @pages.map do 
+      | page | page.compile({ **ctx, variables: options[:variables] }) 
     end
+    
+    (pages + @pages.map(&:use_assets))
+      .flatten.uniq do | page | page.path end
+  end
 
-    add(HTMLPage.new(path: 'index.html', html: list << '</ul>'))
+  def add pages
+    [pages].flatten.each do | page | @pages.push page end
 
     self
+  end
+  
+  def self.from_file
+    Proc.new do | e | self.new path: e[:path], html: e[:file]  end
   end
 end
 
 class Asset 
   attr_reader :path, :contents
   
-  def initialize filename, contents
+  def initialize filename:, contents:
     @path = Pathname.new("public/#{filename.split('/').last}")
     @contents = contents
   end
@@ -146,127 +126,197 @@ end
 
 class CSS < Asset 
   def to_str
-    format('<link rel="stylesheet" href="%<path>s"></link>', path: @path)
+    format('<link rel="stylesheet" href="/%<path>s"></link>', path: @path)
   end
 end
 
 class HTMLPage
-  attr_reader :path, :assets, :title
+  attr_reader :path, :title, :contents, :assets
 
-  def initialize path:, html:, assets: [], title: 'home'
-    @path = path.is_a?(Pathname) ? path : Pathname.new(path)
-    @assets = assets
+  def initialize path:, html: '', assets: [], title: 'home'
+    @path = Pathname.new(path.to_s)
+    @html = html
+
     @title = title ||= @path.basename.to_s
+    @assets = assets
     @contents = ''
-    @htmls = [html]
   end
 
-  def contents
-    @contents
-  end
-  
-  def compile tokens = {}
-    compiled = @htmls.reduce :+
-
+  def compile ctx    
+    html = format '%<h>s <main class="%<cn>s %<fn>s">%<m>s</main>%<f>s%<a>s', { 
+      t: 'main',
+      h: ctx[:layouts]['header'],
+      m: to_html(ctx),
+      f: ctx[:layouts]['footer'],
+      a: use_assets.reduce('', :+),
+      cn: self.class.to_s.downcase,
+      fn: @path.basename(@path.extname).to_s
+    }
+    
     @contents = { 
-      **tokens, "{{TITLE}}" => @title, 
-      "{{BYTES}}" => compiled.bytesize.to_s 
-    }.reduce compiled do | compiled, (placeholder, value) | 
-      compiled = compiled.gsub(placeholder, value.to_s) 
+      **ctx[:variables], 
+      "title" => @title, 
+      "bytes" => html.bytesize.to_s 
+    }.reduce html do | html, (variable, value) | 
+      html = html.gsub('{{' + variable.to_s + '}}', value.to_s) 
     end
-
-    
-    @htmls = []
 
     self
   end
   
-  def prepend htmls  
-    [htmls].flatten.each do | html |
-      @htmls.unshift html
-    end
+  private def to_list items, to_list_item
+    list = <<~BODY
+      <ul class="list">
+        #{items.reduce('',&to_list_item)}
+      </ul>
+    BODY
     
-    self
+    list.squeeze("\n")
   end
   
-  def append htmls  
-    [htmls].flatten.each do | html |
-      @htmls.push html
-    end
+  private def to_html 
+    raise StandardError.new 'abstract class' 
+  end
+  
+  def use_assets 
+    []  
+  end
+end
 
-    self
-  end  
+class Layout 
+  attr_reader :name
+
+  def initialize path:, html:
+    @name = path.basename(path.extname).to_s
+    @html = html
+  end
+  
+  def self.from_file
+    Proc.new do | e | 
+      self.new path: e[:path], html: e[:file]  
+    end
+  end
+  
+  def to_s
+    @html
+  end
 end
 
 # --- Userland (supposedly) ---- 
 
 # @TODO this feels wrong?
 class MarkdownPage < HTMLPage
-  def initialize path:, markdown: 
-    super(path:, title: to_title(markdown), html: to_html(markdown))
+  def initialize path:, title: nil, markdown: 
+    super(path:, title: title ? title : to_title(markdown))
+    @markdown = markdown
+  end
+
+  def self.from_file
+    Proc.new do | e | self.new path: e[:path], markdown: e[:file]  end
+  end
+  
+  def to_html ctx
+    Kramdown::Document.new(@markdown, {
+      input: 'GFM', auto_ids: true,
+      syntax_highlighter: 'rouge'
+    }).to_html
   end
   
   def to_title markdown
     markdown.lines.first&.start_with?('# ') ? 
       markdown.lines.first[2..-1].strip : 
-      'Blog Index'
-  end
-  
-  def to_html markdown, opts = { input: 'GFM' }
-    Kramdown::Document.new(markdown, opts).to_html
-  end
-
-  def self.from readerFn, glob 
-    Pathname.glob(glob).map do | path |
-      self.new(path:, markdown: readerFn.call(path) )
-    end
+      'Untitled'
   end
 end
 
 class Page < MarkdownPage 
   def initialize path:, markdown: 
-    super(path: "#{path.basename(path.extname)}.html", markdown:)
+    super path: "#{path.basename(path.extname)}/index.html", markdown:
   end
 end
 
 class Post < MarkdownPage
-  attr_reader :date, :year
+  attr_reader :date, :link
+  
+  def initialize path:, markdown:
+    super(path: "/posts/#{path.basename(path.extname)}/index.html", markdown:)
 
-  def initialize path:, markdown:, assets: []
-    super(path: "posts/#{path.basename(path.extname)}.html", markdown:)
-    @assets = [
-      CSS.new('hl.css', Rouge::Themes::Github.mode(:light).render(scope: '.hl'))
-    ]
-    
     @date = Date.parse(markdown.lines[2]&.strip || '') rescue Date.today
-    @year = @date.strftime '%b, %Y'
+    @link = @path.dirname
+  end
+  
+  def use_assets
+    [ 
+      CSS.new(
+        filename: 'highlights.css', 
+        contents: Rouge::Themes::Github.mode(:light).render(scope: '.highlight')
+      ) 
+    ]
+  end
+end
+
+class Index < MarkdownPage 
+  def initialize path:, markdown:
+    super(path: '/index.html', title: 'Home', markdown:)
+  end
+
+  def to_html ctx
+    to_list ctx[:posts], to_list_item = -> (list, post) { 
+      list << post = <<~BODY
+      <li>
+        <a href="#{post.link}">
+          <h3>#{post.title}</h3> 
+          <small>
+            <time datetime="#{post.date}">
+              #{post.date.strftime("%b, %Y")}
+            </time>
+          </small>
+        </a>
+      </li>
+      BODY
+    }
   end
 end
 
 # --- Build function ---- 
 
-def build config
-  reader = Proc.new do | path | File.read path end
+def files dir 
+  Pathname.glob(dir).map do | path | { path:, file: File.read(path) } end
+end
 
-  Blog.new({
-    index:  File.read('index.md'), 
-    header: File.read('src/header.html'), 
-    footer: File.read('src/footer.html'), 
-    ** config
-  })
-  .add(Post.from(reader, 'posts/**.md'))
-  .add(Page.from(reader, 'pages/**.md'))
-  .compile({ "{{FOO}}" => 'BAR' })
-  .each do | page |
-    puts "writes: #{page.path}"
-
-    FileUtils.mkdir_p(File.join(config['dest'], page.path.dirname))
-    File.write(File.join(config['dest'], page.path), page.contents) 
+def write dest
+  Proc.new do | page | 
+    FileUtils.mkdir_p File.join(dest, page.path.dirname)
+    File.write File.join(dest, page.path), page.contents
   end
+end
 
-  FileUtils.cp_r 'public/.', File.join(config['dest'], 'public')  
-  
-  puts "result: OK"
+def copy glob, dest
+  FileUtils.cp_r glob, File.join(dest, Pathname.new(glob).dirname) 
+end
+
+def build config
+  Site.new(config:)
+    .use(files('_layouts/*').map(&Layout.from_file))
+    .add(files('posts/**.md').map(&Post.from_file))
+    .add(files('pages/**.md').map(&Page.from_file))
+    .add(files('index.md').map(&Index.from_file))
+    .compile({ variables: config })
+    .each(&write(config['dest']))
+
+  copy 'public/.', config['dest']
 end 
 
+def serve port, root, dest
+  server = WEBrick::HTTPServer.new :Port => port, :DocumentRoot => root
+  server.mount dest, WEBrick::HTTPServlet::FileHandler, 'build/public/'
+
+  trap 'INT' do server.shutdown exit true; end
+
+  server.start
+end
+
 build YAML.load_file './_config.yml'
+puts "\033[1;32m- build: OK - \e[0m"
+puts "\033[1;34m- server starting at: 8000 - \e[0m"
+serve 8081, 'build', 'public'
