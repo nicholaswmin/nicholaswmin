@@ -106,8 +106,10 @@ class Site
     self
   end
   
-  def self.from_file
-    Proc.new do | e | self.new path: e[:path], html: e[:file]  end
+  def self.from_entry
+    Proc.new do | entry | 
+      self.new path: entry[0], html: entry[1]  
+    end
   end
 end
 
@@ -190,9 +192,9 @@ class Layout
     @html = html
   end
   
-  def self.from_file
-    Proc.new do | e | 
-      self.new path: e[:path], html: e[:file]  
+  def self.from_entry
+    Proc.new do | entry | 
+      self.new path: entry[0], html: entry[1]  
     end
   end
   
@@ -210,8 +212,10 @@ class MarkdownPage < HTMLPage
     @markdown = markdown
   end
 
-  def self.from_file
-    Proc.new do | e | self.new path: e[:path], markdown: e[:file]  end
+  def self.from_entry
+    Proc.new do | entry | 
+      self.new path: entry[0], markdown: entry[1] 
+    end
   end
   
   def to_html ctx
@@ -279,7 +283,9 @@ end
 # --- Build function ---- 
 
 def read dir 
-  Pathname.glob(dir).map do | path | { path:, file: File.read(path) } end
+  Pathname.glob(dir).map do | path | 
+    [ path, File.read(path) ] 
+  end
 end
 
 def write dest
@@ -295,10 +301,10 @@ end
 
 def build config
   Site.new(config:)
-    .use(read('_layouts/*').map(&Layout.from_file))
-    .add(read('posts/**.md').map(&Post.from_file))
-    .add(read('pages/**.md').map(&Page.from_file))
-    .add(read('index.md').map(&Index.from_file))
+    .use(read('_layouts/*').map(&Layout.from_entry))
+    .add(read('posts/**.md').map(&Post.from_entry))
+    .add(read('pages/**.md').map(&Page.from_entry))
+    .add(read('index.md').map(&Index.from_entry))
     .compile(variables: config)
     .each(&write(config['dest']))
 
@@ -306,6 +312,7 @@ def build config
 end 
 
 def serve port, root
+  root = root.sub('./', '')
   server = WEBrick::HTTPServer.new :Port => port, :DocumentRoot => root
   server.mount 'public', WEBrick::HTTPServlet::FileHandler, "#{root}/public/"
 
@@ -324,4 +331,4 @@ build config
 puts "\033[1;32m- build: OK - \e[0m"
 
 puts "\033[1;34m- serve: OK - \e[0m"
-serve 8081, config[:dest]
+serve 8081, config['dest']
