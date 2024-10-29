@@ -16,7 +16,8 @@
 # been possible without "wruby".
 # 
 # Check out wruby here: https://git.btxx.org/wruby/tree/
-#$VERBOSE = true
+
+# @todo turn on: $VERBOSE = true
 
 require 'bundler/inline'
 
@@ -73,7 +74,6 @@ require 'yaml'
 #   which is the blog pages plus any deduped assets.
 
 class Site
-  # @todo named params only
   def initialize config:
     @config = config.clone
     @layouts = []
@@ -81,9 +81,7 @@ class Site
   end
 
   def posts 
-    @pages.filter do | page | 
-      page.class.to_s.downcase.include? 'post' 
-    end
+    @pages.filter do | page | page.class.to_s.downcase.include? 'post' end
   end
   
   def use layouts
@@ -97,10 +95,7 @@ class Site
       layouts: @layouts, 
       ctx: { posts:, variables: }
     ) 
-    end
-    
-    (pages + @pages.map(&:assets))
-      .flatten.uniq do | page | page.path end
+    end + @pages.map(&:assets).flatten.uniq do | page | page.path end
   end
 
   def add pages
@@ -110,9 +105,7 @@ class Site
   end
   
   def self.from_entry
-    Proc.new do | entry | 
-      self.new path: entry[0], html: entry[1]  
-    end
+    Proc.new do | entry | self.new path: entry[0], html: entry[1] end
   end
 end
 
@@ -125,9 +118,7 @@ class Layout
   end
   
   def self.from_entry
-    Proc.new do | entry | 
-      self.new path: entry[0], html: entry[1]  
-    end
+    Proc.new do | entry | self.new path: entry[0], html: entry[1] end
   end
   
   def to_s
@@ -139,20 +130,22 @@ class Asset
   attr_reader :path, :contents
   
   def initialize filename:, contents:
-    @path = Pathname.new("public/#{filename.split('/').last}")
+    @path = Pathname.new("/public/#{filename.split('/').last}")
     @contents = contents
   end
 end
 
 class HTMLPage
-  attr_reader :path, :title, :contents, :assets
+  attr_reader :path, :title, :assets, :contents
 
-  def initialize path:, assets: [], title:
+  def initialize path:, title:, assets: []
     @path = Pathname.new(path.to_s)
+    @title = title ||= @path.basename.to_s
+    @assets = []
+    @contents = nil
+    
     @type = self.class.to_s.downcase
     @name = @path.basename(@path.extname).to_s
-    @title = title ||= @path.basename.to_s
-    @contents = nil
   end
 
   def compile layouts:, ctx:   
@@ -182,29 +175,21 @@ class HTMLPage
   end
   
   private def to_list items, to_list_item
-    list = <<~BODY
+    list = <<~BODY.squeeze("\n")
       <ul class="list">
         #{items.reduce('',&to_list_item)}
       </ul>
     BODY
-    
-    list.squeeze("\n")
   end
   
-  private def to_html 
-    raise StandardError.new 'abstract class' 
-  end
-  
-  def assets 
-    []  
-  end
+  private def to_html () raise StandardError.new 'abstract class' end
 end
 
 # --- Userland (supposedly) ---- 
 
 class CSS < Asset 
   def to_str
-    format('<link rel="stylesheet" href="/%<path>s"></link>', path: @path)
+    format('<link rel="stylesheet" href="%<path>s"></link>', path:)
   end
 end
 
@@ -213,12 +198,6 @@ class MarkdownPage < HTMLPage
   def initialize path:, title: nil, markdown: 
     super(path:, title: title ? title : to_title(markdown))
     @markdown = markdown
-  end
-
-  def self.from_entry
-    Proc.new do | entry | 
-      self.new path: entry[0], markdown: entry[1] 
-    end
   end
   
   def to_html ctx
@@ -233,11 +212,15 @@ class MarkdownPage < HTMLPage
       markdown.lines.first[2..-1].strip : 
       'Untitled'
   end
+  
+  def self.from_entry
+    Proc.new do | entry | self.new path: entry[0], markdown: entry[1] end
+  end
 end
 
 class Page < MarkdownPage 
   def initialize path:, markdown: 
-    super path: "#{path.basename(path.extname)}/index.html", markdown:
+    super path: "/#{path.basename(path.extname)}/index.html", markdown:
   end
 end
 
@@ -253,7 +236,7 @@ class Post < MarkdownPage
   
   def assets
     CSS.new(
-      filename: 'highlights.css', 
+      filename: 'highlight.css', 
       contents: Rouge::Themes::Github.mode(:light)
         .render(scope: '.highlight') 
     )
@@ -283,56 +266,69 @@ class Index < MarkdownPage
   end
 end
 
-# --- File helpers ---- 
 
-to_entry = Proc.new do | path | [ path, File.read(path) ]  end
-not_index = Proc.new do | path | ! path.to_s.include? 'index' end 
+# --- Main ---- 
 
-def file (path) to_entry.call(path) end
-def files (dir) Pathname.glob(dir).filter(&not_index?).map(&to_entry) end
 
-def write dest
-  Proc.new do | page | 
-    FileUtils.mkdir_p File.join(dest, page.path.dirname)
-    File.write File.join(dest, page.path), page.contents
+module Builder  
+  def run
+    puts "\033[1;34m- start: OK - \e[0m"
+    config = YAML.load_file './_config.yml'
+
+    build(dest: config['dest'], config:)
+    puts "\033[1;32m- build: OK - \e[0m"
+    
+    serve port: 8081, dest: config['dest'].sub('./', '')
+  end
+  
+  def build dest:, config: 
+    Site.new(config:)
+      .use(read('_layouts/*.html').map(&Layout.from_entry))
+      .add(
+        read('posts/*.md').map(&Post.from_entry) +
+        read('pages/*[^index]*.md').map(&Page.from_entry)  +
+        read('pages/index.md').map(&Index.from_entry)
+      )
+      .compile(variables: config)
+      .each(&write(dest))
+  
+    FileUtils.cp_r('public/.', 'build/public/')
+  end
+  
+  # --- File helpers ---- 
+  
+  def write dest 
+    -> page { 
+      dirpath = File.join dest, page.path.dirname
+      filepath = File.join dest, page.path 
+
+      FileUtils.mkdir_p dirpath
+      File.write filepath, page.contents  
+
+      puts "- wrote: #{page.path}"  
+    }
+  end
+
+  def read glob 
+    Dir[glob].map { | path | [Pathname(path), File.read(path)] }
+  end
+  
+  # --- Server (@todo temp only, remove it) ---- 
+
+  def serve port:, dest:
+    server = WEBrick::HTTPServer.new :Port => port, :DocumentRoot => dest
+    server.mount 'public', WEBrick::HTTPServlet::FileHandler, "#{dest}/public/"
+  
+    trap 'INT' do server.shutdown exit true end
+  
+    server.start
   end
 end
 
-def copy glob, dest
-  FileUtils.cp_r glob, File.join(dest, Pathname.new(glob).dirname) 
-end
-
-# --- Build function ---- 
-
-def build config
-  Site.new(config:)
-    .use(files('_layouts/*').map(&Layout.from_entry))
-    .add(files('posts/**.md').map(&Post.from_entry))
-    .add(files('pages/**.md').map(&Page.from_entry))
-    .add(file['pages/index.md'].map(&Index.from_entry))
-    .compile(variables: config)
-    .each(&write(config['dest']))
-
-  copy 'public/.', config['dest']
-end 
-
-def serve port, dir
-  server = WEBrick::HTTPServer.new :Port => port, :DocumentRoot => dir
-  server.mount 'public', WEBrick::HTTPServlet::FileHandler, "#{dir}/public/"
-
-  trap 'INT' do server.shutdown exit true; end
-
-  server.start
-end
 
 # --- Main -----
 
-puts "- deps.: OK"
 
-config = YAML.load_file './_config.yml'
+include Builder
 
-build config
-puts "\033[1;32m- build: OK - \e[0m"
-
-puts "\033[1;34m- serve: OK - \e[0m"
-serve 8081, config['dest'].sub('./', '')
+run

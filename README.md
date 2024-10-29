@@ -2,7 +2,7 @@
 
 > [WIP]
 >
-> [hyper minimal][concise] static-site framework,   
+> a [minimal][concise] static-site framework,   
 > inspired by Bradley Taunt's [wruby][wruby] & the [1kb club][club]
 >
 > `nix` means *nothing* in rejective form.
@@ -27,10 +27,9 @@ It's a single-file, [nix.rb][file-rb]; download & drop it in a folder:
 ruby nix.rb --init
 ```
 
-### missing ruby?
+### missing latest ruby?
 
-Ruby v2+ is included by default; this just upgrades it to
-latest version:
+You need to be on `> v3.3`:
 
 ```bash
 brew install ruby

@@ -2,8 +2,6 @@
 
 2023-12-10
 
-[![tests][testb]][tests] [![ccovt][cocov]](#tests)
-
 > A [finite-state machine][fsm]  
 >
 > ... is an abstract machine that can be in one of a finite number of states.    
