@@ -12,7 +12,7 @@ lerna-debug.log*
 build/
 
 # scratchfiles
-scratch.*
+scratch
 
 # Dumps
 *.rdb

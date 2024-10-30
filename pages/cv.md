@@ -2,7 +2,7 @@
 
 {{author_name}}
 [{{author_user}}][author-url]
-{{author_sub}}
+{{author_city}}
 
  
 - ### Bitpaper
@@ -40,4 +40,4 @@
   #### London, UK  
   #### 2009 - 2013
 
-[author-url]: {{author_url}}
+[author-url]: https://github.com/{{author_user}}

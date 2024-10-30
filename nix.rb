@@ -64,14 +64,14 @@ require 'yaml'
 # - [ ] support nested config for variables
 # - [ ] All writable should extend Writable? (too much fs coupling?)
 # - [ ] Header/Footer are layouts too?
-# 
+# - [ ] Fix path resolution (does not use __dirname)
 # --- Classes ---
 
 # The main class. It holds all `Page`-like instances.
 # 
 # - When `compile` is called it compiles every page
 #   and returns a list of `Files`-like instances,
-#   which is the blog pages plus any deduped assets.
+#   which is the blog pages
 
 class Site
   def initialize config:
@@ -84,18 +84,18 @@ class Site
     @pages.filter do | page | page.class.to_s.downcase.include? 'post' end
   end
   
-  def use layouts
+  def using layouts
     @layouts = (layouts.map do | layout | [layout.name, layout] end).to_h
 
     self
   end
   
-  def compile variables: {}
-    pages = @pages.map do | page | page.compile(
-      layouts: @layouts, 
-      ctx: { posts:, variables: }
-    ) 
-    end + @pages.map(&:assets).flatten.uniq do | page | page.path end
+  def compile variables
+    pages = @pages.map do | page | 
+      page.compile(layouts: @layouts, ctx: { posts:, variables: }) 
+    end + @pages.flatten.uniq do | page | page.path end
+    
+    pages
   end
 
   def add pages
@@ -104,10 +104,50 @@ class Site
     self
   end
   
-  def self.from_entry
-    Proc.new do | entry | self.new path: entry[0], html: entry[1] end
+  def self.from_dto
+    Proc.new do | dto | self.new path: dto.path, html: dto.data end
   end
 end
+
+
+class DTO 
+  @@src = ''
+  @@dest = ''
+  @@readwriter = nil
+
+  attr_reader :path, :data
+
+  def initialize path, data 
+    @path = path
+    @data = data
+  end
+  
+  def self.using src:, dest:
+    @@src  = src
+    @@dest = dest
+
+    self
+  end
+
+  def self.saves mod
+    @@readwriter = mod
+    self
+  end
+
+  def self.glob glob
+    glob = File.join(@@src, glob)
+
+    (@@readwriter.glob glob).map do | path |  
+      self.new(path, @@readwriter.read(path.to_s)) 
+    end
+  end
+
+  def write 
+    @@readwriter.write(File.join(@@dest, @path), @data) 
+  end
+end
+
+
 
 class Layout 
   attr_reader :name
@@ -117,8 +157,8 @@ class Layout
     @html = html
   end
   
-  def self.from_entry
-    Proc.new do | entry | self.new path: entry[0], html: entry[1] end
+  def self.from_dto
+    Proc.new do | dto | self.new path: dto.path, html: dto.data end
   end
   
   def to_s
@@ -126,14 +166,6 @@ class Layout
   end
 end
 
-class Asset 
-  attr_reader :path, :contents
-  
-  def initialize filename:, contents:
-    @path = Pathname.new("/public/#{filename.split('/').last}")
-    @contents = contents
-  end
-end
 
 class HTMLPage
   attr_reader :path, :title, :assets, :contents
@@ -163,6 +195,8 @@ class HTMLPage
     self
   end
   
+  def to_dto() DTO.new(@path, @contents) end
+
   #todo use erb?
   private def replace html, variables
     { 
@@ -181,21 +215,13 @@ class HTMLPage
       </ul>
     BODY
   end
-  
-  private def to_html () raise StandardError.new 'abstract class' end
 end
 
 # --- Userland (supposedly) ---- 
 
-class CSS < Asset 
-  def to_str
-    format('<link rel="stylesheet" href="%<path>s"></link>', path:)
-  end
-end
-
 # @TODO this feels wrong?
 class MarkdownPage < HTMLPage
-  def initialize path:, title: nil, markdown: 
+  def initialize path, markdown, title = nil
     super(path:, title: title ? title : to_title(markdown))
     @markdown = markdown
   end
@@ -213,39 +239,32 @@ class MarkdownPage < HTMLPage
       'Untitled'
   end
   
-  def self.from_entry
-    Proc.new do | entry | self.new path: entry[0], markdown: entry[1] end
+  def self.from_dto
+    Proc.new do | dto | self.new(dto.path, dto.data) end
   end
 end
 
 class Page < MarkdownPage 
-  def initialize path:, markdown: 
-    super path: "/#{path.basename(path.extname)}/index.html", markdown:
+  def initialize path, markdown
+    super "/#{path.basename(path.extname)}/index.html", markdown
   end
 end
 
 class Post < MarkdownPage
   attr_reader :date, :link
   
-  def initialize path:, markdown:
-    super(path: "/posts/#{path.basename(path.extname)}/index.html", markdown:)
+  def initialize path, markdown
+    super "/posts/#{path.basename(path.extname)}/index.html", markdown
 
     @date = Date.parse(markdown.lines[2]&.strip || '') rescue Date.today
     @link = @path.dirname
   end
-  
-  def assets
-    CSS.new(
-      filename: 'highlight.css', 
-      contents: Rouge::Themes::Github.mode(:light)
-        .render(scope: '.highlight') 
-    )
-  end
+
 end
 
 class Index < MarkdownPage 
-  def initialize path:, markdown:
-    super(path: '/index.html', title: 'Home', markdown:)
+  def initialize path, markdown
+    super('/index.html', markdown, 'Home')
   end
 
   def to_html ctx
@@ -269,66 +288,75 @@ end
 
 # --- Main ---- 
 
-
-module Builder  
-  def run
-    puts "\033[1;34m- start: OK - \e[0m"
-    config = YAML.load_file './_config.yml'
-
-    build(dest: config['dest'], config:)
-    puts "\033[1;32m- build: OK - \e[0m"
-    
-    serve port: 8081, dest: config['dest'].sub('./', '')
+module Filesystem 
+  def self.glob glob 
+    Pathname.glob(glob) 
   end
   
-  def build dest:, config: 
-    Site.new(config:)
-      .use(read('_layouts/*.html').map(&Layout.from_entry))
-      .add(
-        read('posts/*.md').map(&Post.from_entry) +
-        read('pages/*[^index]*.md').map(&Page.from_entry)  +
-        read('pages/index.md').map(&Index.from_entry)
-      )
-      .compile(variables: config)
-      .each(&write(dest))
-  
-    FileUtils.cp_r('public/.', 'build/public/')
+  def self.read path 
+    File.read(path) 
   end
   
-  # --- File helpers ---- 
+  def self.write path, data
+    FileUtils.mkdir_p Pathname.new(path.to_s).dirname
+    File.write path, data
   
-  def write dest 
-    -> page { 
-      dirpath = File.join dest, page.path.dirname
-      filepath = File.join dest, page.path 
-
-      FileUtils.mkdir_p dirpath
-      File.write filepath, page.contents  
-
-      puts "- wrote: #{page.path}"  
-    }
-  end
-
-  def read glob 
-    Dir[glob].map { | path | [Pathname(path), File.read(path)] }
-  end
-  
-  # --- Server (@todo temp only, remove it) ---- 
-
-  def serve port:, dest:
-    server = WEBrick::HTTPServer.new :Port => port, :DocumentRoot => dest
-    server.mount 'public', WEBrick::HTTPServlet::FileHandler, "#{dest}/public/"
-  
-    trap 'INT' do server.shutdown exit true end
-  
-    server.start
+    puts "- wrote: #{path}"  
   end
 end
 
+def init
+  substd = -> content { content.gsub('┊', '"').gsub('¦', "\n") }
+  expand = -> ((path, content)) { [Pathname.new(path), substd.(content)] }
+
+  [
+    ['_config.yml', "name: 'A bunny blog'¦author: 'Nicholas Kyriakides'¦favicon: 🐇¦¦dest: './build'¦¦"],
+    ['_layouts/header.html', "<!doctype html>¦<html lang=┊en┊>¦¦<head>¦  <meta charset=┊utf-8┊>¦  <meta name=┊viewport┊ content=┊width=device-width, initial-scale=1┊>¦  <meta name=┊description┊ content=┊a blog site┊>¦  <link rel=┊icon┊ href=┊data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='0' y='14'>{{favicon}}</text></svg>┊>¦  <link rel=┊stylesheet┊ href=┊/public/style.css┊>¦  <title>{{title}}</title>¦</head> ¦¦<nav>¦  <ul>¦    <li><a href=┊/┊>posts</a></li>¦    <li><a href=┊/cv┊>author </a></li>¦  </ul>¦</nav>¦"],
+    [ '_layouts/footer.html', "<footer>¦  <small> <small> > <a href=┊https://1kb.club/┊>{{bytes}} bytes</a> </small></small>¦</footer>¦" ],
+    [ 'posts/primordial-post.md', "# what is this?¦¦21-10-2021¦¦ You're viewing a sample `Post`.¦¦¦¦  This site is an example of minimalism in software design; otherwise ¦known as **conciseness**. ¦¦It's generated using a **minimal** static-site generator, which renders¦posts from `Markdown`.¦¦---¦¦in common usage and linguistics, concision  (also called conciseness, ¦succinctness,[^1] terseness, brevity, or laconicism) is a communication ¦principle[^2] of eliminating redundancy,[^3] generally  achieved by using as ¦few words as possible in  a sentence while preserving its meaning. ¦¦> I have made this longer than usual, only because I have not ¦> had the time to make it shorter.¦¦[Blaise Pascal][bp]¦¦This is a list¦¦- apples¦- oranges¦- ~~grapes~~¦¦Heres a picture of Felix The Housecat to check how images render:¦¦![An image of Felix the Housecat, a cartoon](/public/felix.webp ┊Felix the Cat┊)¦¦This project was inspired by: The [1kb club][1kb].¦¦[1kb]: https://1kb.club/¦[bp]: https://en.wikipedia.org/wiki/Blaise_Pascal¦¦### Footnotes¦¦[^1]: Garner, Bryan A. (2009). Garner on Language and Writing: Selected Essays z¦      and Speeches of Bryan A. Garner. Chicago: American Bar Association. p. 295. ¦      ISBN 978-1-60442-445-4.¦¦[^2]: William Strunk (1918). The Elements of Style.¦¦[^3]: UNT Writing Lab. ┊Concision, Clarity, and Cohesion.┊ ¦      Accessed June 19, 2012. Link.¦¦"
+    ],
+    ['posts/another-post.md', "# just another post ¦¦2020-10-15¦¦> posts are good, mkay?¦ ¦this is just another post, because the 1st one might be lonely.¦¦thanks,¦¦"],
+    ['pages/terms.md', "¦## Terms & Conditions¦¦> not really gonna write terms and conditions¦¦ This is a sample `Page`. it's like a post but not quite. ¦¦> It's is written in `Markdown` but doesn't support code syntax highlighting ¦> nor is it included in any Post lists.¦¦You can add as many as you want within this folder.¦¦Merci¦"],
+    ['pages/index.md', "hello world, this is sample post generated by nix" ],
+    ['public/style.css', ":root {¦  --bg-color: #fafafa; ¦  --bg-color-full: #fff;¦  --primary-color: #00695C;¦  --secondary-color: #3700B3;¦  --font-color: #555; ¦  --font-color-lighter: #777;¦  --font-color-lightest: #ccc;¦  --font-size: 14x; ¦}¦¦¦@media (prefers-color-scheme: dark) {¦  :root {¦    --bg-color: #222; ¦    --bg-color-full: #111;¦    --primary-color: #0097A7;¦    --font-color: #ccc; ¦    --font-color-lighter: #aaa;¦    --font-color-lightest: #666;¦  }¦}¦¦/* Resets */¦¦* { ¦  font-family: monospace; font-size: var(--font-size);¦  font-weight:normal; text-decoration: none;¦}¦¦body { ¦  /* must acc. 80-chars in code */¦  max-width: 110ex; margin: 1em auto; padding: 0 1em;¦  background: var(--bg-color); color: var(--font-color); ¦  ::selection { background: var(--font-color-lightest); }¦¦  overflow-y: scroll;¦  @media print { width: auto; }¦}¦¦/* --- Typography ---*/¦¦p { padding: 1em 0; }¦a { color: var(--primary-color); font-size: inherit; }¦a:hover { color: var(--link-color-hover);  }¦blockquote { font-style: italic; }¦blockquote > p { display:inline; }¦¦h1, h2, h3, h4, h5, p, blockquote, pre { line-height: 1.5; padding: 0.5em 0; }¦h1 { font-size: 1.75em; } h2 { font-size: 1.5em; } h3 { font-size: 1.25em;  }¦h4, h4 *, small, small * { font-size: 0.9em; color: var(--font-color-lighter); }¦¦h1, h2, h3 { margin: 1.5em 0 1em 0; }¦h1, h2 { border-bottom: 1px solid var(--font-color-lightest); }¦¦/* --- Mav/Main/Footer ---*/¦¦main { padding: 1.5em 0; img { margin: 2em 0; max-width: 100%; } }¦nav, footer {  @media print { display: none; }  }¦¦/* --- Lists ---*/¦¦ul { ¦  display: block; padding-left: 1em; margin: 2em 0; list-style-type: '- ';¦ \th1, h2, h3, h4, h5, h6 { margin: 0; padding: 0.25em 0; } ¦  h3 { color: var(--primary-color); }¦  li { margin: 1em 0; }¦}¦¦/* Nav Lists */¦¦nav, footer {¦  padding: 1em 0;¦  ul { display: block; margin: 0; padding-left: 0; }¦\tli { display: inline-block; margin-right: 2em;  }¦\tli a { color: var(--font-color); }¦\tsmall { display: inline-block; margin-top: 2em; }¦}¦¦/* Postpage: title & date */¦.post { ¦  h1:first-of-type, h2:first-of-type { margin-bottom: 0; }¦  code { ¦    padding: 2px 6px; border-radius: 0; font-size: 1em; ¦    background: var(--font-color-lightest); ¦  }¦¦  pre {¦    font-size: 1.1em; padding: 2em; border-radius: 6px;¦    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24); word-wrap: break-word;¦    background: var(--bg-color-full);¦    code {  ¦      display: block; ¦      background: var(--bg-color-full); white-space: break-spaces; ¦    }¦  }¦    ¦  blockquote { ¦    background: none;¦    border-left: 2px solid var(--font-color-lightest);¦    border-radius: 0; margin: 2em 0; padding: 1em; font-style: normal;¦    p { color: var(--font-color-lighter); }¦  }¦  ¦  hr { margin: 2.5em 0 2.5em 0; border: 0.5px solid; border-color: var(--font-color-lightest);}¦  ¦  .footnotes { margin-top: 2em; }¦}¦"]
+  ]
+  .map(&expand)
+  .map(&DTO.method(:new))
+  .each do | dto | dto.write('.') end
+end
+  
+def build config
+  DTO
+    .saves(Filesystem)
+    .using(src: config['src'], dest: config['dest'])
+  
+  Site.new(config:)
+    .using(DTO.glob('_layouts/*.html').map(&Layout.from_dto))
+    .add(
+      DTO.glob('posts/*.md').map(&Post.from_dto) +
+      DTO.glob('pages/*.md').map(&Page.from_dto) +
+      DTO.glob('index.md').map(&Index.from_dto)
+    )
+    .compile(config) 
+    .map(&:to_dto) 
+    .map(&:write)
+  
+  FileUtils.cp_r('public/.', "#{config['dest']}/public")
+end
+
+def serve port:, dest:
+  server = WEBrick::HTTPServer.new :Port => port, :DocumentRoot => dest
+  server.mount 'public', WEBrick::HTTPServlet::FileHandler, "#{dest}/public/"
+
+  trap 'INT' do server.shutdown exit true end
+
+  server.start
+end
 
 # --- Main -----
 
+build YAML.load_file('./_config.yml')
 
-include Builder
+puts "\e[0;32m- build: ok\e[0m"
 
-run
+serve port: 8000, dest: 'build'
