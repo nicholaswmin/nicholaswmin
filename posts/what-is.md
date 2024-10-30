@@ -42,23 +42,18 @@ From [The Elements of Style][eos], [William Strunk][ws]
 
 This blog has 3 pages:
 
-- A post list, the authors CV and the **post itself**
- 
-- It is focused. it skips fluff and only includes the bare minimums.
-- It does one thing but does it well. Semantic HTML, a tiny CSS file with
-  respects for dark mode, 
-  ARIA accessibility-standards checked, and above all it's tiny hyper 
-  performant size.It's file size could be measured in bytes
+- A post
+- A post list
+- the authors CV
 
 What you've just read was filler text, half of it being complete bullshit. 
 This page seems to render fine. 
 
 Thanks for reading.
 
-Heres a picture of Felix The Housecat to check how images render:
+Heres an SVG image of **Felix The Housecat** to verify image rendering:
 
-![An imae of Felix the Housecat, a cartoon](/public/felix.webp "Felix the Cat")
-
+![Felix the Housecat, the cartoon](/public/felix.svg "Felix the Housecat")
 
 This project was inspired by: The [1kb club][1kb].
  
