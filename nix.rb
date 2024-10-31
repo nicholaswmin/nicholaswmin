@@ -55,17 +55,20 @@ require 'yaml'
 # - [ ] An init method
 # - [ ] Tests
 # - [ ] Error handling
-# - [x] Unique page class
+# - [x] Unique css page class
 # - [ ] Bring RSS back
 # - [ ] Style tweaks
 # - [ ] use https://rubystyle.guide/#percent-q-shorthand
-# - [ ] Use option parser for CLI args: https://ruby-doc.org/stdlib-2.7.1/libdoc/optparse/rdoc/OptionParser.html
+# - [x] Use option parser for CLI args: https://ruby-doc.org/stdlib-2.7.1/libdoc/optparse/rdoc/OptionParser.html
 # - [ ] consider ERB for templating  
 # - [ ] fix dark mode css on code snippets in post
 # - [ ] support nested config for variables
 # - [ ] All writable should extend Writable? (too much fs coupling?)
 # - [ ] Header/Footer are layouts too?
 # - [ ] Fix path resolution (does not use __dirname)
+# - [ ] Github publish action
+# 
+# 
 # --- Classes ---
 
 # The main class. It holds all `Page`-like instances.
