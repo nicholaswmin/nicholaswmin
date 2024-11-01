@@ -7,7 +7,6 @@
 >
 > `nix` means *nothing* in rejective form.
 
-
 - [install](#install)
 - [init](#usage)
 - [blog](#usage)
@@ -17,52 +16,41 @@
 
 ## install
 
-It's a single-file, [nix.rb][file-rb]; download & drop it in a folder:
+It's a single-file, [nix.rb][file-rb].
+
+Download & drop it in a folder then:
+
+> make it exeutable
+
+```bash
+chmod a+x nix.rb
+```
 
 ## init
 
 > create a sample blog:
 
 ```bash
-ruby nix.rb --init
+nix --init blog
 ```
 
-### missing latest ruby?
+## build to html
 
-You need to be on `> v3.3`:
+add your posts as [markdown][gfm] files in `posts/` then:
+
+> output `html` in `/build`
 
 ```bash
-brew install ruby
+nix
 ```
-
-or
-
-```bash
-sudo apt-get install ruby-full
-```
-
-## blog
-
-add [markdown][gfm] in `posts/`, then:
-
-> build HTML in `build/`:
-
-```bash
-ruby nix.rb
-```
-
-outputs all `HTML` in `/build`.
 
 ## publish
 
->  via [Github Pages][gh-pages]: 
+Just push to your repository. 
 
-`git push` all changes 
+The custom action will get triggered & publish via [Github Pages][gh-pages].
 
-1. Visit `Repository` > `Settings` > `Pages`
-2. `Enable` on branch: `main`, folder: `build/`
-
-and visit: [`https://<username>.github.io/<repo>`](https://<username>.github.io/<repo>)
+To view it, visit: [`https://<username>.github.io/<repo>`](https://<username>.github.io/<repo>)
 
 > **note:** you obvs. need to change `<username>` & `<repo-name>` to match
 > your own values
@@ -134,9 +122,11 @@ fswatch -o -r -d ./ -e build | xargs -n1 -I{} ruby nix.rb & ruby -run -e httpd -
 
 ## contributing
 
-> merge to single 
+> build single-file and run
 
-cat nix-core.rb nix-blog.rb > nix.rb
+```bash
+cat *.rb > nix.rb && ruby nix.rb
+```
 
 > stay within the LOCs
 
