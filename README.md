@@ -16,7 +16,7 @@
 
 ## install
 
-It's a single-file, [nix.rb][file-rb].
+It's a single-file, [nix][file-rb].
 
 Download & drop it in a folder then:
 
@@ -100,8 +100,6 @@ ruby -run -e httpd -- build
 
 ## file watching
 
-> tired of pressing `save` on every change?
-
 Grab [`fswatch`][fswatch]:
 
 ```bash
@@ -111,21 +109,21 @@ brew install fswatch
 then run:
 
 ```js
-fswatch -o -r -d ./ -e build | xargs -n1 -I{} ruby nix.rb
+fswatch -o -r -d ./ -e build | xargs -n1 -I{} nix
 ```
 
 or to build & serve *simultaneously*:
 
 ```bash
-fswatch -o -r -d ./ -e build | xargs -n1 -I{} ruby nix.rb & ruby -run -e httpd -- build
+fswatch -o -r -d ./ -e build | xargs -n1 -I{} nix & ruby -run -e httpd -- build
 ```
 
 ## contributing
 
-> build single-file and run
+> build, run & serve
 
 ```bash
-cat *.rb > nix.rb && ruby nix.rb
+cat *.rb > nix.rb && chmod a+x nix.rb && ./nix && ruby -run -e httpd -- build
 ```
 
 > stay within the LOCs

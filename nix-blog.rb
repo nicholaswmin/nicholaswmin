@@ -1,3 +1,6 @@
+
+# ------- Blog ---------
+ 
 require 'bundler/inline'
 
 gemfile do
@@ -9,8 +12,6 @@ gemfile do
   gem 'rouge', '~> 4.4.0', require: true
   gem 'logger', '~> 1.6.0', require: false
 end
-
-GREEN = ENV['NO_COLORS'] ? "" : "\e[0;32m"; RESET = "\u001b[0m";
 
 class MarkdownPage < HTMLPage
   def initialize path, markdown, title = nil
@@ -65,11 +66,7 @@ class Index < MarkdownPage
       <li>
         <a href="#{post.link}">
           <h3>#{post.title}</h3> 
-          <small>
-            <time datetime="#{post.date}">
-                #{post.date.strftime('%b, %Y')}
-            </time> 
-         </small>
+          <div>#{post.date.strftime('%b, %Y')}</div> 
         </a>
       </li>
       BODY
@@ -87,31 +84,31 @@ end
 
 # --- Builder ---- 
 
+COLOR = ENV['NO_COLORS'] ? Hash.new('') : { 'ok' => "\e[0;32m", '0' => "\e[0m" }
+
 def build config
   base = config['base']
   dest = config['dest']
+  new = -> type do -> path do type.new(path, File.read(path)) end end
 
-  to_type = -> type do -> path do type.new(path, File.read(path)) end end
-  to_file = -> dest do -> page do
+  FileUtils.rm_rf(Dir[dest])   
+
+  Site
+    .new(Pathname.glob('_layouts/*.html', base:).map(&new[Layout]))
+    .add(Pathname.glob('posts/*[^index]*.md', base:).map(&new[Post]))
+    .add(Pathname.glob('pages/*[^index].md', base:).map(&new[Page]))
+    .add(Pathname.glob('pages/index.md', base:).map(&new[Index]))
+    .compile(variables: config) 
+    .map do |page| 
       path = Pathname File.join dest, page.path
+
       FileUtils.mkdir_p path.dirname
       File.write(path, page.data); puts "- wrote: #{path}"   
     end
-  end
-    
-  site = Site
-    .new(Pathname.glob('_layouts/*.html', base:).map(&to_type[Layout]))
-    .add(Pathname.glob('posts/*[^index]*.md', base:).map(&to_type[Post]))
-    .add(Pathname.glob('pages/*[^index].md', base:).map(&to_type[Page]))
-    .add(Pathname.glob('posts/index.md', base:).map(&to_type[PostIndex]))
-    .add(Pathname.glob('pages/index.md', base:).map(&to_type[Index]))
-    .compile(variables: config) 
   
-  FileUtils.rm_rf(Dir[dest])   
-  site.pages.map(&to_file[dest])
   FileUtils.cp_r(File.join(base, 'public/'), File.join(dest, 'public'))
 
-  puts "#{GREEN} init:ok, output: #{dest} #{RESET}"
+  puts "#{COLOR['ok']} init:ok, output: #{dest} #{COLOR['0']}"
 end
 
 # --- Program Main -----

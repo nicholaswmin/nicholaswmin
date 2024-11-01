@@ -22,8 +22,6 @@ class Site
     @docs
       .map do |page| page.compile layouts:, ctx: { pages:, variables: } end
       .flatten.uniq do |page| page.path end
-    
-    self
   end
 end
 
@@ -45,12 +43,6 @@ class Document
     @path = Pathname.new path.to_s
     @name = @path.parent.basename.to_s
     @data = data
-  end
-  
-  def to_name path 
-    path.basename(path.extname).to_s === "index" ? 
-      Pathname.new(@path).parent.to_s.delete_prefix('/') : 
-      Pathname.new(path)
   end
 end
 
@@ -80,7 +72,6 @@ class HTMLPage < Document
   def render(*) '' end
   def to_s() @data end
 
-  #todo use erb?
   private def replace html, variables
     { **variables, 
       'title' => @title, 
