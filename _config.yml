@@ -5,5 +5,5 @@ author_name: 'Nicholas Kyriakides'
 author_user: 'nicholaswmin'
 author_city: 'Nicosia, 1075'
 
-src: './'
+base: './'
 dest: './build'
