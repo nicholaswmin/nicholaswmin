@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-
 class Site
   attr_reader :layouts, :pages
 

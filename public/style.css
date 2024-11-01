@@ -9,8 +9,24 @@
   --font-size: 14x; 
 }
 
+/*
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #222; 
+    --bg-color-full: #111;
+    --primary-color: #0097A7;
+    --font-color: #ccc; 
+    --font-color-lighter: #aaa;
+    --font-color-lightest: #666;
+  }
+}
+*/
+
+/* Resets */
+
 * { 
-  font-family: monospace;
+  font-family: monospace; font-size: var(--font-size);
+  font-weight:normal; text-decoration: none;
 }
 
 body { 

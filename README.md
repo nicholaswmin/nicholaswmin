@@ -123,7 +123,13 @@ fswatch -o -r -d ./ -e build | xargs -n1 -I{} nix & ruby -run -e httpd -- build
 > build, run & serve
 
 ```bash
-cat *.rb > nix.rb && chmod a+x nix.rb && ./nix && ruby -run -e httpd -- build
+rm -f nix.rb && cat *.rb > nix.rb && ruby nix.rb && serve
+```
+
+> this needs to be in your `~/.bash_profile`:
+
+```bash
+alias serve="ruby -r un -e httpd -- build"
 ```
 
 > stay within the LOCs
