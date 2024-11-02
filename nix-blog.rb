@@ -2,6 +2,7 @@
 # ------- Blog ---------
  
 require 'bundler/inline'
+require 'net/http'
 
 gemfile do
   source 'https://rubygems.org'
@@ -9,7 +10,7 @@ gemfile do
   gem 'webrick', '~> 1.8.2', require: true
   gem 'kramdown', '~> 2.4.0', require: true
   gem 'kramdown-parser-gfm', '~> 1.1.0', require: true
-  gem 'rouge', '~> 4.4.0', require: true
+  gem 'json', '~> 2.7.1', require: true
   gem 'logger', '~> 1.6.0', require: false
 end
 
@@ -60,44 +61,66 @@ class Index < MarkdownPage
 
   def render ctx
     ispost = -> item do item.class.to_s == 'Post' end
-
-    super(ctx) + to_list(ctx[:pages].filter(&ispost), -> list, post { 
+    list_items = ctx[:pages].filter(&ispost).reduce('') do |list,post| 
       list << post = <<~BODY
       <li>
         <a href="#{post.link}">
           <h3>#{post.title}</h3> 
-          <div>#{post.date.strftime('%b, %Y')}</div> 
+          <small>#{post.date.strftime('%b, %Y')}</small> 
         </a>
       </li>
       BODY
-    })
-  end
-
-  private def to_list items, to_list_item
-    list = <<~BODY.squeeze("\n")
+    end
+    
+    super(ctx) + <<~BODY.squeeze("\n")
       <ul class="list">
-        #{items.reduce('',&to_list_item)}
+        #{list_items}
       </ul>
     BODY
   end
 end
 
-# --- Builder ---- 
+# --- Program Main -----
 
-COLOR = ENV['NO_COLORS'] ? Hash.new('') : { 'ok' => "\e[0;32m", '0' => "\e[0m" }
+module FS
+  def self.create type
+    -> path do type.new(path, File.read(path)) end
+  end
+
+  def self.write dest, overwrite: false
+    -> ((path, data)) do 
+      path = Pathname.new File.join dest, path
+  
+      FileUtils.mkdir_p path.dirname
+  
+      if File.exist?(path) && !overwrite
+        return warn("skipping: #{path}")
+      end
+
+      File.write(path, data); puts "- wrote: #{path}";
+    end
+  end
+end
+
+# --- Create sample site from JSON -----
+
+def init dest:, json:
+  JSON(json).fetch('files').each(&FS::write(dest))
+end
+
+# --- Build all files to HTML -----
 
 def build config
   base = config['base']
   dest = config['dest']
-  new = -> type do -> path do type.new(path, File.read(path)) end end
 
   FileUtils.rm_rf(Dir[dest])   
 
   Site
-    .new(Pathname.glob('_layouts/*.html', base:).map(&new[Layout]))
-    .add(Pathname.glob('posts/*[^index]*.md', base:).map(&new[Post]))
-    .add(Pathname.glob('pages/*[^index].md', base:).map(&new[Page]))
-    .add(Pathname.glob('pages/index.md', base:).map(&new[Index]))
+    .new(Pathname.glob('_layouts/*.html', base:).map(&FS::create(Layout)))
+    .add(Pathname.glob('posts/*[^index]*.md', base:).map(&FS::create(Post)))
+    .add(Pathname.glob('pages/*[^index].md', base:).map(&FS::create(Page)))
+    .add(Pathname.glob('pages/index.md', base:).map(&FS::create(Index)))
     .compile(variables: config) 
     .map do |page| 
       path = Pathname File.join dest, page.path
@@ -111,6 +134,7 @@ def build config
   puts "#{COLOR['ok']} init:ok, output: #{dest} #{COLOR['0']}"
 end
 
-# --- Program Main -----
+# --- Parse CLI -----
 
-build YAML.load_file './_config.yml'
+init dest: 'blog', json: Net::HTTP.get(URI('https://gist.githubusercontent.com/nicholaswmin/af3200aa016b983b5a46cb3f63254f02/raw/b8f0fe4f4603a817304953c2dbeab61cc3a91062/example.json'))
+build YAML.load_file('./_config.yml')
