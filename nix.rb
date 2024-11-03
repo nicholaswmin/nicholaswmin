@@ -250,7 +250,7 @@ if params[:help] || params.empty?
 end
 
 if params[:build]
-  build YAML.load_file '_con2fig.yml' rescue
+  build YAML.load_file '_config.yml' rescue
     Log.fatal NoConfigError.new
 
   Log.info 'build ok'
