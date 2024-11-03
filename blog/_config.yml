@@ -1,0 +1,9 @@
+name: 'Johns blog'
+favicon: 🐇
+
+author_name: 'John Doe'
+author_user: '@johndow'
+author_city: 'London, W2'
+
+base: './'
+dest: './build'

@@ -183,18 +183,18 @@ class NoConfigError < StandardError
   end
 end
 
-def color lvl = 'reset'
-  color = { 'WARN' => 33, 'INFO' => 32, 'ERROR' => 31, 'FATAL' => 31 }[lvl]
-  ENV['NO_COLORS'] ? '' : lvl.downcase == 'reset' ? "\033[m" : "\e[0;#{color}m"
+def color level
+  color = { 'WARN' => 33, 'INFO' => 32, 'ERROR' => 31, 'FATAL' => 31 }[level]
+  NO_COLORS ? '' : "\e[0;#{color}m"
 end
 
 Log = Logger.new $stdout
-Log.formatter = proc do |lvl, datetime, progname, msg|  
-  if lvl == 'FATAL' 
+Log.formatter = proc do |level, datetime, progname, msg|  
+  if level == 'FATAL' 
     puts msg&.detail ||= ''
     raise msg
   else
-    puts "#{color(lvl)}#{lvl} #{msg}#{color(lvl) ? color('reset') : '' }"
+    puts "#{color(level)}#{level} #{msg}#{color(level) ? color('reset') : '' }"
   end
 end
 
@@ -208,17 +208,17 @@ module FS
       FileUtils.mkdir_p pathname.dirname
       
       if File.exist?(pathname) && !force
-        return Log.warn("write #{pathname}, skipped. exists") 
+        return Log.warn("| write |#{pathname} | skipped, exists") 
       end
   
       File.write(pathname, data); 
-      Log.debug "write #{pathname} ok"
+      Log.debug "| write | #{pathname}"
     end
   end
 end
 
 def init url 
-  Log.info "fetching files from: #{url} ..."
+  Log.info "| fetching | samples from: #{url} ..."
   JSON.load(URI.open(url)).each(&FS::write(dest: './')) 
 end 
 
@@ -238,22 +238,22 @@ Site
 end
 
 params = {}
-opts = OptionParser.new("docs: https://github.com/nicholaswmin/nix") do |o|
+opts = OptionParser.new("\ndocs: https://github.com/nicholaswmin/nix \n") do |o|
   o.on('-i', '--init',  "create new sample site")
   o.on('-b', '--build', "build site to output")
-  o.on('-s PORT', '--serve PORT', "serve site at port", Integer)
+  o.on('-s PORT', '--serve PORT', "start dev. server at PORT", Integer)
   o.on('-h', '--help',  "print this help")
 end; opts.parse!(into: params)
 
 if params[:help] || params.empty?
-  puts $0, color('CYAN'), opts.help, color('reset')
+  puts $0, color('INFO'), opts.help, color('reset')
 end
 
 if params[:build]
-  build YAML.load_file '_con2fig.yml' rescue
+  build YAML.load_file '_config.yml' rescue
     Log.fatal NoConfigError.new
 
-  Log.info 'build ok'
+  Log.info '| build | ok'
 end
 
 if (params[:init])

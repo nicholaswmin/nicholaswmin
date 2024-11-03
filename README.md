@@ -20,10 +20,10 @@ It's a single-file, [nix][file-rb].
 
 Download & drop it in a folder then:
 
-> make it exeutable
+ensure you have [Ruby 3.5+][ruby]
 
 ```bash
-chmod a+x nix.rb
+brew install ruby
 ```
 
 ## init
@@ -31,7 +31,7 @@ chmod a+x nix.rb
 > create a sample blog:
 
 ```bash
-nix --init blog
+ruby nix.rb --init
 ```
 
 ## build to html
@@ -41,7 +41,15 @@ add your posts as [markdown][gfm] files in `posts/` then:
 > output `html` in `/build`
 
 ```bash
-nix
+ruby nix.rb --build
+```
+
+## serve
+
+> start a dev. server at `port:8081`
+
+```bash
+ruby nix.rb --serve 8081
 ```
 
 ## publish
@@ -92,11 +100,7 @@ additionally:
 - css are in `public/style.css`
 - config site via `_config.rb`
 
-## serve locally
-
-```bash
-ruby -run -e httpd -- build
-```
+## Extras
 
 ## file watching
 
@@ -115,22 +119,10 @@ fswatch -o -r -d ./ -e build | xargs -n1 -I{} nix
 or to build & serve *simultaneously*:
 
 ```bash
-fswatch -o -r -d ./ -e build | xargs -n1 -I{} nix & ruby -run -e httpd -- build
+fswatch -o -r -d ./ -e build | xargs -n1 -I{} nix & ruby ruby nix.rb -s 8081
 ```
 
 ## contributing
-
-> build, run & serve
-
-```bash
-rm -f nix.rb && cat *.rb > nix.rb && ruby nix.rb && serve
-```
-
-> this needs to be in your `~/.bash_profile`:
-
-```bash
-alias serve="ruby -r un -e httpd -- build"
-```
 
 > stay within the LOCs
 
