@@ -13,6 +13,10 @@ gemfile do
   gem 'logger', '~> 1.6.0', require: true
 end
 
+$PROGRAM_NAME = 'nix'
+DOCS_URL = 'https://github.com/nicholaswmin/nix'
+NO_COLORS = ENV['NO_COLORS'] || !$stdout.tty?
+
 class Site
   attr_reader :layouts, :variables
 
@@ -127,12 +131,8 @@ class MarkdownPage < HTMLPage
 
   private
 
-  def to_title(markdown)
-    if markdown.lines.first&.start_with?('# ')
-      markdown.lines.first[2..].strip
-    else
-      'Untitled'
-    end
+  def to_title(mdn)
+    mdn.lines.first&.start_with?('# ') ? mdn.lines.first[2..].strip : 'untitled'
   end
 end
 
@@ -143,7 +143,7 @@ class Page < MarkdownPage
 end
 
 class Post < MarkdownPage
-  attr_reader :date, :link
+  attr_reader :date
 
   def initialize(path, markdown)
     @date = begin
@@ -151,7 +151,6 @@ class Post < MarkdownPage
     rescue StandardError
       Date.today
     end
-    @link = "/posts/#{path.basename(path.extname)}"
     super("/posts/#{path.basename(path.extname)}/index.html", markdown)
   end
 
@@ -172,7 +171,7 @@ class Index < MarkdownPage
     list_items = ctx[:pages].filter(&ispost).reduce(+'') do |list, post|
       list << <<~BODY
         <li>
-          <a href="#{post.link}">
+          <a href="/posts/#{path.basename(path.extname)}">
             <h3>#{post.title}</h3>#{' '}
             <small>#{post.date.strftime('%b, %Y')}</small>#{' '}
           </a>
@@ -189,9 +188,6 @@ class Index < MarkdownPage
 end
 
 # -- Initialisation --
-
-$PROGRAM_NAME = 'nix'
-NO_COLORS = ENV['NO_COLORS'] || !$stdout.tty?
 
 class NoConfigError < StandardError
   attr_reader :detail
@@ -210,13 +206,13 @@ class NoConfigError < StandardError
   end
 end
 
-def color(lvl = 'reset')
-  color = { 'WARN' => 33, 'INFO' => 32, 'ERROR' => 31, 'FATAL' => 31 }[lvl]
-  if ENV['NO_COLORS']
-    ''
-  else
-    lvl.downcase == 'reset' ? "\033[m" : "\e[0;#{color}m"
+def color(level = 'reset')
+  if NO_COLORS
+    return ''
   end
+
+  color = { 'WARN' => 33, 'INFO' => 32, 'ERROR' => 31, 'FATAL' => 31 }[level]
+  color ? "\e[0;#{color}m" : "\033[m"
 end
 
 Log = Logger.new $stdout
@@ -254,23 +250,20 @@ def init(url)
   JSON.parse(URI.parse(url).open.read)['files'].each(&FS.write(dest: './'))
 end
 
-def build(config)
-  base = config['base']
-  dest = config['dest']
-
+def build(base:, dest:, variables:)
   Site
     .new(Pathname.glob('_layouts/*.html', base:).map(&FS.create(Layout)))
     .add(Pathname.glob('posts/*[^index]*.md', base:).map(&FS.create(Post)))
     .add(Pathname.glob('pages/*[^index].md', base:).map(&FS.create(Page)))
     .add(Pathname.glob('pages/index.md', base:).map(&FS.create(Index)))
-    .compile(variables: config)
+    .compile(variables:)
     .map(&FS.write(dest:, force: true))
 
   FileUtils.cp_r(File.join(base, 'public/'), File.join(dest, 'public'))
 end
 
 params = {}
-opts = OptionParser.new('docs: https://github.com/nicholaswmin/nix') do |o|
+opts = OptionParser.new do |o|
   o.on('-i', '--init',  'create new sample site')
   o.on('-b', '--build', 'build HTML to output')
   o.on('-s', '--serve [PORT]', 'serve site at port', Integer)
@@ -278,21 +271,23 @@ opts = OptionParser.new('docs: https://github.com/nicholaswmin/nix') do |o|
 end
 opts.parse!(into: params)
 
-if params[:help] || params.empty?
-  puts "\n", $PROGRAM_NAME, "static-site generator\n", opts.help
+if params.key?(:help) || params.empty?
+  puts "\n", $PROGRAM_NAME, "docs: #{DOCS_URL}\n\n", opts.help, "\n"
+  exit
 end
 
-if params[:init]
+if params.key?(:init)
   init 'https://raw.githubusercontent.com/nicholaswmin/nix/main/init.json'
-  Log.info 'init ok, you should commit & push these files!'
+  Log.info 'init ok, you should commit files'
 end
 
-if params[:build]
-  build YAML.load_file '_config.yml'
+config = YAML.load_file '_config.yml'
+
+if params.key?(:build)
+  build base: config['base'], dest: config['dest'], variables: config
   Log.info 'build ok'
 end
 
 if params.key?(:serve)
-  spawn "ruby -run -e httpd . -p #{params[:serve] ||= '0'}"
+  spawn "ruby -run -e httpd -- #{config['dest']} . -p #{params[:serve] ||= '0'}"
 end
-puts "\n"

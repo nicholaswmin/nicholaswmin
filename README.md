@@ -46,7 +46,7 @@ ruby nix.rb --build
 
 ## serve
 
-> start a dev. server at `port:8081`
+> start a dev. server at `:8081`
 
 ```bash
 ruby nix.rb --serve 8081
@@ -113,28 +113,25 @@ brew install fswatch
 then run:
 
 ```js
-fswatch -o -r -d ./ -e build | xargs -n1 -I{} nix
+fswatch -o -r -d ./ -e build | xargs -n1 -I{} ruby nix.rb -b
 ```
 
-or to build & serve *simultaneously*:
+> to serve *simultaneously*, run `ruby nix.rb -s` in another terminal window.
 
-```bash
-fswatch -o -r -d ./ -e build | xargs -n1 -I{} nix & ruby ruby nix.rb -s 8081
-```
 
 ## contributing
+
+> linter
+
+```bash 
+rubocop nix.rb
+```
 
 > stay within the LOCs
 
 ```bash
 # LOC count, ignores emptyline & comments
 cat nix.rb | sed '/^\s*#/d;/^\s*$/d' | wc -l
-```
-
-> filter-out [`rouge`][rouge] ruby warnings
-
-```bash
-ruby -w nix.rb 2>&1 | grep -v "rouge"
 ```
 
 ## test
