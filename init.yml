@@ -1,4 +1,19 @@
 ---
+# This file contains the necessary data 
+# for creating the files for a sample blog site.
+# It is downloaded when you the init flag is passed: ` --init`
+
+- config.yml: >
+    name: 'A blog'
+    favicon: 🐇
+    
+    author_name: 'Nicholas Kyriakides'
+    author_user: 'nicholaswmin'
+    author_city: 'Nicosia, 1075'
+    
+    base: './'
+    dest: './build'
+
 - pages/README.md: >
     # blog
 
