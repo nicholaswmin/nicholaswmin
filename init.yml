@@ -3,7 +3,7 @@
 # for creating the files for a sample blog site.
 # It is downloaded the init flag is passed: ` --init`
 
-- config.yml: |
+- _config.yml: |
     name: 'A blog'
     favicon: 🐇
     
@@ -270,7 +270,7 @@
     [pyg]: https://pygments.org/
     [gfm]: https://github.github.com/gfm/
 
-- pages/another-post.md: |
+- posts/another-post.md: |
     # just another post
 
     21-11-2020
