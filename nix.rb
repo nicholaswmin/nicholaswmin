@@ -217,12 +217,14 @@ Log.formatter = proc do |lvl, _datetime, _progname, msg|
 end
 
 module FS
+  @path_keys_to_entries = ->(v) { v.to_a.flatten }
+
   def self.create(type) = lambda do |path|
     type.new(path, File.read(path))
   end
 
   def self.write_keys(hash)
-    hash.map { |v| v.to_a.flatten }.each(&FS.write_entries(dest: './'))
+    hash.map(&@path_keys_to_entries).each(&FS.write_entries(dest: './'))
   end
 
   def self.write_entries(dest:, force: false)
@@ -276,7 +278,7 @@ if params.key?(:init)
   Log.debug "fetching #{local || remote} ..."
 
   FS.write_keys YAML.safe_load(local ? File.read(local) : URI(remote).open.read)
-  Log.info "init ok \n\nrun:\n\n$ ruby nix.rb --build\n\nto build the site\n"
+  Log.info "init ok \n\nrun:\n\n$ ruby nix.rb -b\n\nto build the site\n"
 end
 
 config = begin
@@ -287,7 +289,7 @@ end
 
 if params.key?(:build) || params.key?(:serve)
   build base: config['base'], dest: config['dest'], variables: config
-  Log.info "build ok \n\nrun:\n\n$ ruby nix.rb --serve 8081\n\nto serve it\n"
+  Log.info "build ok \n\nrun:\n\n$ ruby nix.rb -s 8081\n\nto serve the site\n"
 end
 
 if params.key?(:serve)
