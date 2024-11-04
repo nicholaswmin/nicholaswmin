@@ -1,9 +1,0 @@
-name: 'A blog'
-favicon: 🐇
-
-author_name: 'Nicholas Kyriakides'
-author_user: 'nicholaswmin'
-author_city: 'Nicosia, 1075'
-
-base: './'
-dest: './build'

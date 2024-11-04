@@ -8,8 +8,8 @@ gemfile do
   gem 'optparse', '~> 0.4.0', require: true
   gem 'kramdown', '~> 2.4.0', require: true
   gem 'kramdown-parser-gfm', '~> 1.1.0', require: true
+  gem 'rouge', '~> 4.4.0', require: true
   gem 'open-uri', '~> 0.4.1', require: true
-  gem 'json', '~> 2.7.1', require: true
   gem 'logger', '~> 1.6.0', require: true
 end
 
@@ -63,7 +63,7 @@ class Layout
 end
 
 class Document
-  attr_reader :path, :data
+  attr_reader :path, :name, :data
 
   def initialize(path, data = nil)
     @path = Pathname.new path.to_s
@@ -160,8 +160,8 @@ class Post < MarkdownPage
 end
 
 class Index < MarkdownPage
-  def initialize(path, markdown)
-    super("#{path}/index.html", markdown, 'Home')
+  def initialize(_path, markdown)
+    super('/index.html', markdown, 'Home')
   end
 
   def render(ctx)
@@ -171,7 +171,7 @@ class Index < MarkdownPage
     list_items = ctx[:pages].filter(&ispost).reduce(+'') do |list, post|
       list << <<~BODY
         <li>
-          <a href="/posts/#{path.basename(path.extname)}">
+          <a href="/posts/#{post.name}">
             <h3>#{post.title}</h3>#{' '}
             <small>#{post.date.strftime('%b, %Y')}</small>#{' '}
           </a>
@@ -200,7 +200,7 @@ class NoConfigError < StandardError
       Cannot find _config.yml in current directory
       #{color('RESET')}#{color('WARN')}
       If you didnt create a site yet, run:\n
-      $ nix --init#{' '}
+      $ ruby nix.rb --init#{' '}
       #{color('RESET')}
     BODY
   end
@@ -247,10 +247,12 @@ end
 
 def init(url)
   Log.info "fetching files from: #{url} ..."
-  JSON.parse(URI.parse(url).open.read)['files'].each(&FS.write(dest: './'))
+  YAML.safe_load(URI.parse(url).open.read)['files'].each(&FS.write(dest: './'))
 end
 
 def build(base:, dest:, variables:)
+  FileUtils.rm_rf(Dir.glob("#{dest}/*"))
+
   Site
     .new(Pathname.glob('_layouts/*.html', base:).map(&FS.create(Layout)))
     .add(Pathname.glob('posts/*[^index]*.md', base:).map(&FS.create(Post)))
@@ -277,17 +279,22 @@ if params.key?(:help) || params.empty?
 end
 
 if params.key?(:init)
-  init 'https://raw.githubusercontent.com/nicholaswmin/nix/main/init.json'
-  Log.info 'init ok, you should commit files'
+  init 'https://raw.githubusercontent.com/nicholaswmin/nix/main/init.yml'
+  Log.info "init ok, run:\n\n$ ruby nix.rb --build\n\nto build the site\n"
 end
 
-config = YAML.load_file '_config.yml'
+config = begin
+  YAML.load_file '_config.yml'
+rescue StandardError
+  raise Log.fatal NoConfigError.new
+end
 
-if params.key?(:build)
+if params.key?(:build) || params.key?(:serve)
   build base: config['base'], dest: config['dest'], variables: config
-  Log.info 'build ok'
+  Log.info "build ok, run:\n\n$ ruby nix.rb --serve 8081\n\nto serve locally\n"
 end
 
 if params.key?(:serve)
-  spawn "ruby -run -e httpd -- #{config['dest']} . -p #{params[:serve] ||= '0'}"
+  out = config['dest'].tr('.', '').tr('/', '')
+  exec "ruby -run -e httpd -- #{out} -p #{params[:serve] ||= '0'}"
 end
