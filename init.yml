@@ -1,7 +1,10 @@
 ---
-# This file contains the necessary data 
-# for creating the files for a sample blog site.
-# It is downloaded when the init flag is passed: `./nix.rb --init`
+# This file contains the necessary assets 
+# for creating a sample blog site.
+# 
+# When the `--init` flag is passed, it searches for this file 
+# in the working directory. If not found it attempts to download it 
+# from the repository.
 
 - .gitignore: |
     _config.yml
