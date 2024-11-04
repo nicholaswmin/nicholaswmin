@@ -181,39 +181,29 @@ class Index < MarkdownPage
   end
 end
 
-class MissingAssetError < StandardError
-  attr_reader :detail
+Log = Logger.new(
+  $stdout,
+  level: ENV.fetch('DEBUG', 'DEBUG'),
+  formatter: proc { |severity, _datetime, _progname, msg|
+    log = "#{Color.new(severity)}#{severity} #{msg}#{Color.new}"
+    puts severity == 'FATAL' ? puts(msg) && raise(msg) : log
+  }
+)
 
-  def initialize(path)
-    super
-    @detail = <<~BODY
-      #{color('ERROR')}
-      Cannot find #{path} in current directory
-      #{color('RESET')}
-      #{color('WARN')}
-      If you didnt create a site yet, run:\n
-      $ ruby nix.rb --init#{' '}
-      #{color('RESET')}
+class Color
+  def self.new(severity = '', disabled = ENV['NO_COLOR'] || !$stdout.tty?)
+    colors = { fatal: 31, error: 31, warn: 33, info: 32, reset: nil }
+    disabled ? '' : "\e[#{colors[severity.downcase.to_sym] || 0}m"
+  end
+end
+
+class ActionableError < StandardError
+  def initialize(msg, action: nil)
+    super(<<~BODY)
+      #{Color.new(:error)}\n#{msg}#{Color.new}\n
+      #{Color.new(:warn)}#{action}#{Color.new}\n
     BODY
   end
-end
-
-def color(level = 'reset')
-  if ENV['NO_COLORS'] || !$stdout.tty?
-    return ''
-  end
-
-  color = { 'WARN' => 33, 'INFO' => 32, 'ERROR' => 31, 'FATAL' => 31 }[level]
-  color ? "\e[0;#{color}m" : "\033[m"
-end
-
-Log = Logger.new $stdout
-Log.formatter = proc do |lvl, _datetime, _progname, msg|
-  if lvl == 'FATAL'
-    puts msg&.detail ||= ''
-    raise msg
-  end
-  puts "#{color(lvl)}#{lvl} #{msg}#{color(lvl) ? color('reset') : ''}"
 end
 
 module FS
@@ -282,9 +272,12 @@ if params.key?(:init)
 end
 
 config = begin
-  YAML.load_file '_config.yml'
+   YAML.load_file '_config.yml'
 rescue StandardError
-  raise Log.fatal MissingAssetError.new '_config.yml'
+  raise Log.fatal ActionableError.new(
+    'missing _config.yml',
+    action: "If you didnt create a site yet, run:\n\n$ ruby nix.rb --init"
+  )
 end
 
 if params.key?(:build) || params.key?(:serve)
