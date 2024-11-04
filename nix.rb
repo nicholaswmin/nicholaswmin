@@ -13,8 +13,6 @@ gemfile do
 end
 
 $PROGRAM_NAME = 'nix'
-DOCS_URL = 'https://github.com/nicholaswmin/nix'
-NO_COLORS = ENV['NO_COLORS'] || !$stdout.tty?
 
 class Site
   attr_reader :layouts, :variables
@@ -143,12 +141,12 @@ class Post < MarkdownPage
   attr_reader :date
 
   def initialize(path, markdown)
+    super("/posts/#{path.basename(path.extname)}/index.html", markdown)
     @date = begin
       Date.parse(markdown.lines[2]&.strip || '')
     rescue StandardError
       Date.today
     end
-    super("/posts/#{path.basename(path.extname)}/index.html", markdown)
   end
 
   def render(ctx)
@@ -162,10 +160,8 @@ class Index < MarkdownPage
   end
 
   def render(ctx)
-    ispost = lambda do |item|
-      item.instance_of?(::Post)
-    end
-    list_items = ctx[:pages].filter(&ispost).reduce(+'') do |list, post|
+    posts = ctx[:pages].filter { |page| page.instance_of?(::Post) }
+    list_items = posts.sort_by(&:date).reverse.reduce(+'') do |list, post|
       list << <<~BODY
         <li>
           <a href="/posts/#{post.name}">
@@ -202,7 +198,7 @@ class NoConfigError < StandardError
 end
 
 def color(level = 'reset')
-  if NO_COLORS
+  if ENV['NO_COLORS'] || !$stdout.tty?
     return ''
   end
 
@@ -260,6 +256,9 @@ def build(base:, dest:, variables:)
 
   FileUtils.cp_r(File.join(base, 'public/'), File.join(dest, 'public'))
 end
+
+# MAIN Loop
+DOCS_URL = 'https://github.com/nicholaswmin/nix'
 
 params = {}
 opts = OptionParser.new do |o|
