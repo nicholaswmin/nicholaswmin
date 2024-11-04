@@ -1,16 +1,15 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
-
 require 'bundler/inline'
 
 gemfile do
   source 'https://rubygems.org'
   gem 'optparse', '~> 0.4.0', require: true
+  gem 'open-uri', '~> 0.4.1', require: true
+  gem 'logger', '~> 1.6.0', require: true
   gem 'kramdown', '~> 2.4.0', require: true
   gem 'kramdown-parser-gfm', '~> 1.1.0', require: true
   gem 'rouge', '~> 4.4.0', require: true
-  gem 'open-uri', '~> 0.4.1', require: true
-  gem 'logger', '~> 1.6.0', require: true
 end
 
 $PROGRAM_NAME = 'nix'
@@ -112,8 +111,6 @@ class HTMLPage < Document
   end
 end
 
-# --- Userland ---
-
 class MarkdownPage < HTMLPage
   attr_reader :title
 
@@ -187,8 +184,6 @@ class Index < MarkdownPage
   end
 end
 
-# -- Initialisation --
-
 class NoConfigError < StandardError
   attr_reader :detail
 
@@ -245,9 +240,11 @@ module FS
   end
 end
 
-def init(url)
-  Log.info "fetching files from: #{url} ..."
-  YAML.safe_load(URI.parse(url).open.read)['files'].each(&FS.write(dest: './'))
+def fetch_files(url)
+  Log.info "fetching samples files from: #{url} ..."
+  YAML.safe_load(URI.parse(url).open.read)
+      .map { |v| v.to_a.flatten }
+      .each(&FS.write(dest: './'))
 end
 
 def build(base:, dest:, variables:)
@@ -279,8 +276,8 @@ if params.key?(:help) || params.empty?
 end
 
 if params.key?(:init)
-  init 'https://raw.githubusercontent.com/nicholaswmin/nix/main/init.yml'
-  Log.info "init ok, run:\n\n$ ruby nix.rb --build\n\nto build the site\n"
+  fetch_files 'https://raw.githubusercontent.com/nicholaswmin/nix/refs/heads/main/init.yml'
+  Log.info "init ok \n\nrun:\n\n$ ruby nix.rb --build\n\nto build the site\n"
 end
 
 config = begin
@@ -291,7 +288,7 @@ end
 
 if params.key?(:build) || params.key?(:serve)
   build base: config['base'], dest: config['dest'], variables: config
-  Log.info "build ok, run:\n\n$ ruby nix.rb --serve 8081\n\nto serve locally\n"
+  Log.info "build ok \n\nrun:\n\n$ ruby nix.rb --serve 8081\n\nto serve it\n"
 end
 
 if params.key?(:serve)
