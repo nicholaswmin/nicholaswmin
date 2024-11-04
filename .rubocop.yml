@@ -1,5 +1,0 @@
-AllCops:
-  NewCops: enable
-  TargetRubyVersion: 3.3
-Style/IfUnlessModifier:   
-  Enabled: false
