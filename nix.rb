@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 require 'bundler/inline'
 
 gemfile do
@@ -220,6 +221,12 @@ module FS
     type.new(path, File.read(path))
   end
 
+  def self.create_site(yml)
+    YAML.safe_load(yml)
+        .map { |v| v.to_a.flatten }
+        .each(&FS.write(dest: './'))
+  end
+
   def self.write(dest:, force: false)
     lambda do |(path, data)|
       pathname = Pathname.new File.join(dest, path)
@@ -236,13 +243,6 @@ module FS
   end
 end
 
-def fetch_files(url)
-  Log.info "fetching samples files from: #{url} ..."
-  YAML.safe_load(URI.parse(url).open.read)
-      .map { |v| v.to_a.flatten }
-      .each(&FS.write(dest: './'))
-end
-
 def build(base:, dest:, variables:)
   FileUtils.rm_rf(Dir.glob("#{dest}/*"))
 
@@ -257,9 +257,6 @@ def build(base:, dest:, variables:)
   FileUtils.cp_r(File.join(base, 'public/'), File.join(dest, 'public'))
 end
 
-# MAIN Loop
-DOCS_URL = 'https://github.com/nicholaswmin/nix'
-
 params = {}
 opts = OptionParser.new do |o|
   o.on('-i', '--init',  'create new sample site')
@@ -270,12 +267,17 @@ end
 opts.parse!(into: params)
 
 if params.key?(:help) || params.empty?
-  puts "\n", $PROGRAM_NAME, "docs: #{DOCS_URL}\n\n", opts.help, "\n"
+  docs = 'https://github.com/nicholaswmin/nix'
+  puts "\n", $PROGRAM_NAME, "docs: #{docs}\n\n", opts.help, "\n"
   exit
 end
 
 if params.key?(:init)
-  fetch_files 'https://raw.githubusercontent.com/nicholaswmin/nix/refs/heads/main/init.yml'
+  remote = 'https://raw.githubusercontent.com/nicholaswmin/nix/main/init.yml'
+  local = File.exist?('./_init.yml') ? './_init.yml' : nil
+  Log.debug "fetching #{local || remote} ..."
+
+  FS.create_site local ? File.read(local) : URI(remote).open.read
   Log.info "init ok \n\nrun:\n\n$ ruby nix.rb --build\n\nto build the site\n"
 end
 
