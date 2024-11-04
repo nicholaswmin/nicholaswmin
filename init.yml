@@ -111,10 +111,12 @@
         <li><a href="/about">about </a></li>
         </ul>
     </nav>
+
 - _layouts/footer.html: |
     <footer>
         <small> > <a href="https://1kb.club/">{{bytes}} bytes</a> </small>
     </footer>
+
 - pages/index.md: |
     ## hello world
 
