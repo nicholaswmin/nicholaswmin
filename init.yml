@@ -118,6 +118,8 @@
     hello world
 
 - pages/about.md: |
+    CV
+
     {{author_name}}
     [{{author_user}}][author-url]
     {{author_city}}
