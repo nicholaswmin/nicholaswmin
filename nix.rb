@@ -181,16 +181,16 @@ class Index < MarkdownPage
   end
 end
 
-class NoConfigError < StandardError
+class MissingAssetError < StandardError
   attr_reader :detail
 
-  def initialize
+  def initialize(path)
     super
-
     @detail = <<~BODY
       #{color('ERROR')}
-      Cannot find _config.yml in current directory
-      #{color('RESET')}#{color('WARN')}
+      Cannot find #{path} in current directory
+      #{color('RESET')}
+      #{color('WARN')}
       If you didnt create a site yet, run:\n
       $ ruby nix.rb --init#{' '}
       #{color('RESET')}
@@ -221,13 +221,11 @@ module FS
     type.new(path, File.read(path))
   end
 
-  def self.create_site(yml)
-    YAML.safe_load(yml)
-        .map { |v| v.to_a.flatten }
-        .each(&FS.write(dest: './'))
+  def self.write_keys(hash)
+    hash.map { |v| v.to_a.flatten }.each(&FS.write_entries(dest: './'))
   end
 
-  def self.write(dest:, force: false)
+  def self.write_entries(dest:, force: false)
     lambda do |(path, data)|
       pathname = Pathname.new File.join(dest, path)
 
@@ -252,7 +250,7 @@ def build(base:, dest:, variables:)
     .add(Pathname.glob('pages/*[^index].md', base:).map(&FS.create(Page)))
     .add(Pathname.glob('pages/index.md', base:).map(&FS.create(Index)))
     .compile(variables:)
-    .map(&FS.write(dest:, force: true))
+    .map(&FS.write_entries(dest:, force: true))
 
   FileUtils.cp_r(File.join(base, 'public/'), File.join(dest, 'public'))
 end
@@ -277,14 +275,14 @@ if params.key?(:init)
   local = File.exist?('./_init.yml') ? './_init.yml' : nil
   Log.debug "fetching #{local || remote} ..."
 
-  FS.create_site local ? File.read(local) : URI(remote).open.read
+  FS.write_keys YAML.safe_load(local ? File.read(local) : URI(remote).open.read)
   Log.info "init ok \n\nrun:\n\n$ ruby nix.rb --build\n\nto build the site\n"
 end
 
 config = begin
   YAML.load_file '_config.yml'
 rescue StandardError
-  raise Log.fatal NoConfigError.new
+  raise Log.fatal MissingAssetError.new '_config.yml'
 end
 
 if params.key?(:build) || params.key?(:serve)
@@ -296,3 +294,5 @@ if params.key?(:serve)
   out = config['dest'].tr('.', '').tr('/', '')
   exec "ruby -run -e httpd -- #{out} -p #{params[:serve] ||= '0'}"
 end
+
+puts "\n"

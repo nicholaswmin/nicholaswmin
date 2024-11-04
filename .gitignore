@@ -5,6 +5,7 @@ posts
 pages
 public
 build
+_init.yml
 
 # misc.
 .DS_Store
