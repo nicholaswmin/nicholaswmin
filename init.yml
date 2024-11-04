@@ -1,7 +1,18 @@
 ---
 # This file contains the necessary data 
 # for creating the files for a sample blog site.
-# It is downloaded the init flag is passed: ` --init`
+# It is downloaded when the init flag is passed: `./nix.rb --init`
+
+- .gitignore: |
+    _config.yml
+    _layouts
+    posts
+    pages
+    public
+    build
+
+    .DS_Store
+    scratch
 
 - _config.yml: |
     name: 'A blog'
