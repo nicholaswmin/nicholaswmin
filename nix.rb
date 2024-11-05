@@ -39,7 +39,6 @@ class Site
       .map(&compile_page)
       .flatten
       .uniq(&:path)
-      .map(&:to_entry)
   end
 
   def compile_page
@@ -58,6 +57,8 @@ class Layout
   end
 
   def to_s = @html
+   #TODO fix dupe. readable/notwritable, review relation with Document
+  def self.from(read) = ->(path) { new(path, read[path]) }
 end
 
 class Document
@@ -69,7 +70,7 @@ class Document
     @data = data
   end
 
-  def to_entry = [@path, @data]
+  def self.from(read) = ->(path) { new(path, read[path]) }
 end
 
 class HTMLPage < Document
@@ -185,15 +186,16 @@ Log = Logger.new(
   $stdout,
   level: ENV.fetch('DEBUG', 'DEBUG'),
   formatter: proc { |severity, _datetime, _progname, msg|
-    log = "#{Color.new(severity)}#{severity} #{msg}#{Color.new}"
-    puts severity == 'FATAL' ? puts(msg) && raise(msg) : log
+    color_msg = "#{Color.new(severity)}#{severity} #{msg}#{Color.new}"
+    puts severity == 'FATAL' ? puts(msg) && raise(msg) : color_msg
   }
 )
 
 class Color
-  def self.new(severity = '', disabled = ENV['NO_COLOR'] || !$stdout.tty?)
-    colors = { fatal: 31, error: 31, warn: 33, info: 32, reset: nil }
-    disabled ? '' : "\e[#{colors[severity.downcase.to_sym] || 0}m"
+  @@palette = { fatal: 31, error: 31, warn: 33, info: 32, reset: nil }
+
+  def self.new(severity = '', enabled = !ENV['NO_COLOR'] && $stdout.tty?)
+    enabled ? "\e[#{@@palette[severity.downcase.to_sym] || 0}m" : ''
   end
 end
 
@@ -206,43 +208,32 @@ class ActionableError < StandardError
   end
 end
 
-module FS
-  @path_keys_to_entries = ->(v) { v.to_a.flatten }
+def glob(...) = Pathname.glob(...) 
 
-  def self.create(type) = lambda do |path|
-    type.new(path, File.read(path))
-  end
-
-  def self.write_keys(hash)
-    hash.map(&@path_keys_to_entries).each(&FS.write_entries(dest: './'))
-  end
-
-  def self.write_entries(dest:, force: false)
-    lambda do |(path, data)|
-      pathname = Pathname.new File.join(dest, path)
-
-      FileUtils.mkdir_p pathname.dirname
-
-      if File.exist?(pathname) && !force
-        return Log.warn("write #{pathname} skipped. exists")
-      end
-
-      File.write(pathname, data)
-      Log.debug "write #{pathname} ok"
-    end
+def write(base:, force: false)
+  lambda do |document|
+    path = Pathname.new(base + document.path.to_s)
+    FileUtils.mkdir_p path.dirname
+    done = File.exist?(path) && !force ? false : File.write(path, document.data)
+    done ? Log.info("wrote #{path}") : Log.warn("skipped #{path}. exists")
   end
 end
 
-def build(base:, dest:, variables:)
-  FileUtils.rm_rf(Dir.glob("#{dest}/*"))
+def init(url:)
+  path = File.exist?(File.basename(url)) ? File.basename(url) : URI(url)
+  hash = YAML.load(path.is_a?(URI) ? path.read : File.read(path)).inject(:merge)
+  hash.keys.map(&Person.from(hash)).each(&write('./build', dest: true))
+end
 
+def build(base:, dest:, variables:)
+  def glob(pattern, base:) = Pathname.glob(pattern, base:) 
+  FileUtils.rm_rf(glob("#{dest}/*", base:))
   Site
-    .new(Pathname.glob('_layouts/*.html', base:).map(&FS.create(Layout)))
-    .add(Pathname.glob('posts/*[^index]*.md', base:).map(&FS.create(Post)))
-    .add(Pathname.glob('pages/*[^index].md', base:).map(&FS.create(Page)))
-    .add(Pathname.glob('pages/index.md', base:).map(&FS.create(Index)))
+    .new(glob('_layouts/*.html', base:).map(&Layout.from(File.method(:read))))
+    .add(glob('posts/*[^index]*.md', base:).map(&Post.from(File.method(:read))))
+    .add(glob('pages/*[^index]*.md', base:).map(&Page.from(File.method(:read))))
     .compile(variables:)
-    .map(&FS.write_entries(dest:, force: true))
+    .each(&write(base: dest, force: true))
 
   FileUtils.cp_r(File.join(base, 'public/'), File.join(dest, 'public'))
 end
@@ -257,18 +248,13 @@ end
 opts.parse!(into: params)
 
 if params.key?(:help) || params.empty?
-  docs = 'https://github.com/nicholaswmin/nix'
-  puts "\n", $PROGRAM_NAME, "docs: #{docs}\n\n", opts.help, "\n"
+  puts $1, "docs: #'https://github.com/nicholaswmin/nix'", opts.help, "\n"
   exit
 end
 
 if params.key?(:init)
-  remote = 'https://raw.githubusercontent.com/nicholaswmin/nix/main/init.yml'
-  local = File.exist?('./_init.yml') ? './_init.yml' : nil
-  Log.debug "fetching #{local || remote} ..."
-
-  FS.write_keys YAML.safe_load(local ? File.read(local) : URI(remote).open.read)
-  Log.info "init ok \n\nrun:\n\n$ ruby nix.rb -b\n\nto build the site\n"
+  init(url: 'https://raw.githubusercontent.com/nicholaswmin/nix/main/init.yml')
+  Log.info "init ok"
 end
 
 config = begin
@@ -286,7 +272,7 @@ if params.key?(:build) || params.key?(:serve)
 end
 
 if params.key?(:serve)
-  out = config['dest'].tr('.', '').tr('/', '')
+  out = config['dest'].tr('./', '')
   exec "ruby -run -e httpd -- #{out} -p #{params[:serve] ||= '0'}"
 end
 

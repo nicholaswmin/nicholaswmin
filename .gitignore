@@ -5,9 +5,10 @@ posts
 pages
 public
 build
-_init.yml
+init.yml
 
 # misc.
 .DS_Store
 scratch
 .rubocop.yml
+scratch.*
