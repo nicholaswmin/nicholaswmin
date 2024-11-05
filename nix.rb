@@ -2,9 +2,9 @@
 # frozen_string_literal: true
 
 require 'bundler/inline'
-
 gemfile do
   source 'https://rubygems.org'
+  gem 'webrick', '~> 1.9.0', require: true
   gem 'optparse', '~> 0.4.0', require: true
   gem 'open-uri', '~> 0.4.1', require: true
   gem 'logger', '~> 1.6.0', require: true
@@ -12,8 +12,6 @@ gemfile do
   gem 'kramdown-parser-gfm', '~> 1.1.0', require: true
   gem 'rouge', '~> 4.4.0', require: true
 end
-
-$PROGRAM_NAME = 'nix'
 
 class Site
   attr_reader :layouts, :variables
@@ -80,8 +78,8 @@ class HTMLPage < Document
   end
 
   def compile(layouts:, ctx:)
-    type  = self.class.to_s.downcase
-    name  = @path.basename(@path.extname).to_s
+    type = self.class.to_s.downcase
+    name = @path.basename(@path.extname).to_s
 
     html = <<~BODY
       #{layouts['header']}
@@ -182,18 +180,19 @@ class Index < MarkdownPage
   end
 end
 
+$PROGRAM_NAME = 'nix'
+
 Log = Logger.new(
   $stdout,
-  level: ENV.fetch('DEBUG', 'DEBUG'),
+  level: ENV.fetch('LOG_LEVEL', 'DEBUG'), #FIXME not filtering
   formatter: proc { |severity, _datetime, _progname, msg|
-    color_msg = "#{Color.new(severity)}#{severity} #{msg}#{Color.new}"
-    puts severity == 'FATAL' ? puts(msg) && raise(msg) : color_msg
+    colored = "#{Color.new(severity)}#{severity} #{msg}#{Color.new}"
+    puts severity == 'FATAL' ? puts(msg) && raise(msg) : colored
   }
 )
 
 class Color
   @@palette = { fatal: 31, error: 31, warn: 33, info: 32, reset: nil }
-
   def self.new(severity = '', enabled = !ENV['NO_COLOR'] && $stdout.tty?)
     enabled ? "\e[#{@@palette[severity.downcase.to_sym] || 0}m" : ''
   end
@@ -212,26 +211,27 @@ def glob(...) = Pathname.glob(...)
 
 def write(base:, force: false)
   lambda do |document|
-    path = Pathname.new(base + document.path.to_s)
+    path = Pathname.new(base + document.path.to_s) #FIXME brittle, just concats
+
     FileUtils.mkdir_p path.dirname
     done = File.exist?(path) && !force ? false : File.write(path, document.data)
-    done ? Log.info("wrote #{path}") : Log.warn("skipped #{path}. exists")
+    done ? Log.debug("wrote #{path}") : Log.warn("skipped #{path}. exists")
   end
 end
 
 def init(url:)
   path = File.exist?(File.basename(url)) ? File.basename(url) : URI(url)
   hash = YAML.load(path.is_a?(URI) ? path.read : File.read(path)).inject(:merge)
-  hash.keys.map(&Person.from(hash)).each(&write('./build', dest: true))
+  hash.keys.map(&Document.from(hash)).each(&write(base: './'))
 end
 
 def build(base:, dest:, variables:)
-  def glob(pattern, base:) = Pathname.glob(pattern, base:) 
   FileUtils.rm_rf(glob("#{dest}/*", base:))
   Site
     .new(glob('_layouts/*.html', base:).map(&Layout.from(File.method(:read))))
     .add(glob('posts/*[^index]*.md', base:).map(&Post.from(File.method(:read))))
     .add(glob('pages/*[^index]*.md', base:).map(&Page.from(File.method(:read))))
+    .add(glob('pages/index.md', base:).map(&Index.from(File.method(:read))))
     .compile(variables:)
     .each(&write(base: dest, force: true))
 
@@ -242,19 +242,18 @@ params = {}
 opts = OptionParser.new do |o|
   o.on('-i', '--init',  'create new sample site')
   o.on('-b', '--build', 'build HTML to output')
-  o.on('-s', '--serve [PORT]', 'serve site at port', Integer)
+  o.on('-s', '--serve [PORT]', 'build & serve site at port', Integer)
   o.on('-h', '--help', 'print this help')
-end
+end 
 opts.parse!(into: params)
 
 if params.key?(:help) || params.empty?
-  puts $1, "docs: #'https://github.com/nicholaswmin/nix'", opts.help, "\n"
-  exit
+  exit if puts "\n", "https://github.com/nicholaswmin/nix\n\n", opts.help, "\n"
 end
 
 if params.key?(:init)
   init(url: 'https://raw.githubusercontent.com/nicholaswmin/nix/main/init.yml')
-  Log.info "init ok"
+  Log.info 'init ok'
 end
 
 config = begin
@@ -268,12 +267,10 @@ end
 
 if params.key?(:build) || params.key?(:serve)
   build base: config['base'], dest: config['dest'], variables: config
-  Log.info "build ok \n\nrun:\n\n$ ruby nix.rb -s 8081\n\nto serve the site\n"
+  Log.info 'build ok'
 end
 
 if params.key?(:serve)
   out = config['dest'].tr('./', '')
   exec "ruby -run -e httpd -- #{out} -p #{params[:serve] ||= '0'}"
-end
-
-puts "\n"
+  end
