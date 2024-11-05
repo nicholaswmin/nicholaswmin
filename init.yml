@@ -1,11 +1,13 @@
 ---
-# This file contains the necessary assets 
+# This file contains the necessary data 
 # for creating a sample blog site.
 # 
-# When the `--init` flag is passed, it searches for this file 
-# in the working directory. If not found it attempts to download it 
-# from the repository.
-
+# When the `--init` flag is passed, it: 
+#
+# - searches for file: `init.yml` locally, in the current working directory.
+# - if not found, it attempts to download it from the repo. (raw)
+# - It then iterates through the keys and creates a file for each.
+# - each key is a filename. The file contents are listed under each key.
 
 - .gitignore: |
     _config.yml
@@ -19,15 +21,24 @@
     scratch
 
 - _config.yml: |
+    # Site configuration
+
+    # required
     name: 'A blog'
     favicon: 🐇
-    
+
+    base: './'
+    dest: './build'
+
+    # {{tokens}} in Page/Post content are replaced.
+    # i.e: {{author_name}} is replaced with "John Doe"
+
+    # optional
     author_name: 'John Doe'
     author_user: 'nicholaswmin'
     author_city: 'London, W2'
-    
-    base: './'
-    dest: './build'
+
+
 
 - README.md: |
     # blog
@@ -141,7 +152,7 @@
 
     - ### ACME Industries
         #### 2015 - now  
-        #### London, United Kingdom. 
+        #### London, United Kingdom
 
     - ### Foo/Bar GmbH
         #### Dec 22' - May 23'
@@ -152,16 +163,16 @@
         #### Rhône-Alpes, France
 
     - ### Looney Tunes LLC
+        #### Dec 16' - Nov 20'
         #### Madrid, Spain
-        #### Dec 20' - Nov 22'
 
-    - ### Animaniacs LLC
-        #### New York, USA  
+    - ### The Animaniacs LLC
         #### Jun 14' - Apr 15'
+        #### New York, USA  
 
     ## Schools
 
-    - ### University of Whoknows  
+    - ### University of Westminster
         #### BSc Information Systems
         #### London, UK  
         #### 2009 - 2013
@@ -301,6 +312,10 @@
     ... just like this post.
 
 - public/style.css: |
+    /* tweak this to your preference. */ 
+    
+    /* theme */
+    
     :root {
       --bg-color: #fafafa; 
       --bg-color-full: #fff;
@@ -309,107 +324,84 @@
       --font-color: #555; 
       --font-color-lighter: #777;
       --font-color-lightest: #ccc;
-      --font-size: 14x; 
+      --font-size: 14px; 
     }
-
-
-    /* Resets */
-
-
+    
+    /* layout */
+    
     * { 
       font-family: monospace; font-size: var(--font-size);
       font-weight:normal; text-decoration: none;
     }
-
-
+    
     body { 
-      /* must acc. 80-chars in code */
+      /* must fit exactly 80-chars in code snippets */
       max-width: 110ex; margin: 1em auto; padding: 0 1em;
       background: var(--bg-color); color: var(--font-color); 
-      ::selection { background: var(--font-color-lightest); }
-      
       overflow-y: scroll;
-      @media print { width: auto; }
     }
-
-
-    /* --- Typography ---*/
-
-
+    body::selection { background: var(--font-color-lightest); }
+    main { padding: 1.5em 0; }
+    img { margin: 2em 0; max-width: 100%; }
+    
+    /* typography */
+    
     p { padding: 1em 0; }
-
     a { color: var(--primary-color); font-size: inherit; }
-
     a:hover { color: var(--link-color-hover);  }
-
     blockquote { font-style: italic; }
-
     blockquote > p { display:inline; }
-
-
+    
     h1, h2, h3, h4, h5, p, blockquote, pre { line-height: 1.5; padding: 0.5em 0; }
-
     h1 { font-size: 1.75em; } h2 { font-size: 1.5em; } h3 { font-size: 1.25em;  }
-
     h4, h4 *, small, small * { font-size: 0.9em; color: var(--font-color-lighter); }
-
-
     h1, h2, h3 { margin: 1.5em 0 1em 0; }
-
     h1, h2 { border-bottom: 1px solid var(--font-color-lightest); }
-
-
-    /* --- Mav/Main/Footer ---*/
-
-
-    main { padding: 1.5em 0; img { margin: 2em 0; max-width: 100%; } }
-
-    nav, footer {  @media print { display: none; }  }
-
-
-    /* --- Lists ---*/
-
-
+    
+    /* lists */
+    
     ul { 
-
-    display: block; padding-left: 1em; margin: 2em 0; list-style-type: '- ';
+      display: block; padding-left: 1em; margin: 2em 0; list-style-type: '- ';
       h1, h2, h3, h4, h5, h6 { margin: 0; padding: 0.25em 0; } 
       h3 { color: var(--primary-color); }
       li { margin: 1em 0; }
     }
-
-
-    /* Nav Lists */
-
-
+    
+    /* navigation */
+    
     nav, footer {
-
-    padding: 1em 0;
-
-    ul { display: block; margin: 0; padding-left: 0; }
+      padding: 1em 0;s
+      ul { display: block; margin: 0; padding-left: 0; }
       li { display: inline-block; margin-right: 2em;  }
       li a { color: var(--font-color); }
       small { display: inline-block; margin-top: 2em; }
     }
-
-
-    /* Postpage: title & date */
-
+    
+    /* printer */
+    
+    @media print { 
+      body { width: auto; } 
+      nav, footer { display: none; }
+    }
+    
+    /* post page */
+    
     .post { 
-      h1:first-of-type, h2:first-of-type { margin-bottom: 0; }
+      h1:first-of-type, 
+      h2:first-of-type { margin-bottom: 0; }
       code { 
-          padding: 2px 6px; border-radius: 0; font-size: 1em; 
-          background: var(--font-color-lightest); 
+        padding: 2px 6px; border-radius: 0; font-size: 1em; 
+        background: var(--font-color-lightest); 
       }
       
       pre {
-          font-size: 1.1em; padding: 2em; border-radius: 6px;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24); word-wrap: break-word;
-          background: var(--bg-color-full);
-          code {  
-          display: block; 
-          background: var(--bg-color-full); white-space: break-spaces; 
-          }
+        font-size: 1.1em; padding: 2em; border-radius: 6px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24); word-wrap: break-word;
+        background: var(--bg-color-full);
+        code { 
+          display: block; background: var(--bg-color-full);
+          white-space: break-spaces; 
+        }
       }
           
       blockquote { 
@@ -419,8 +411,11 @@
         p { color: var(--font-color-lighter); }
       }
       
-      hr { margin: 2.5em 0 2.5em 0; border: 0.5px solid; border-color: var(--font-color-lightest);}
-      
+      hr { 
+        margin: 2.5em 0 2.5em 0; border: 0.5px solid;
+        border-color: var(--font-color-lightest);
+      }
+    
       .footnotes { margin-top: 2em; }
     }
 
@@ -429,11 +424,10 @@
 
 - public/highlight.css: |
     /*
-    Syntax Highlighting CSS (Pygments)  
-
-    Autogenerated by Rouge Gem using: 
-
-    Rouge::Themes::Github.mode(:light).render(scope: '.highlight') 
-    */
+     * Syntax Highlighting CSS (Pygments)  
+     * Autogenerated by Rouge Gem using: 
+     *
+     * puts Rouge::Themes::Github.mode(:light).render(scope: '.highlight') 
+     */
 
     .highlight table td{padding:5px}.highlight table pre{margin:0}.highlight,.highlight .w{color:#24292f;background-color:#f6f8fa}.highlight .k,.highlight .kd,.highlight .kn,.highlight .kp,.highlight .kr,.highlight .kt,.highlight .kv{color:#cf222e}.highlight .gr{color:#f6f8fa}.highlight .gd{color:#82071e;background-color:#ffebe9}.highlight .nb,.highlight .nc,.highlight .nn,.highlight .no{color:#953800}.highlight .na,.highlight .nt,.highlight .sr{color:#116329}.highlight .gi{color:#116329;background-color:#dafbe1}.highlight .ges{font-weight:700;font-style:italic}.highlight .bp,.highlight .il,.highlight .kc,.highlight .l,.highlight .ld,.highlight .m,.highlight .mb,.highlight .mf,.highlight .mh,.highlight .mi,.highlight .mo,.highlight .mx,.highlight .ne,.highlight .nl,.highlight .nv,.highlight .o,.highlight .ow,.highlight .py,.highlight .sb,.highlight .vc,.highlight .vg,.highlight .vi,.highlight .vm{color:#0550ae}.highlight .gh,.highlight .gu{color:#0550ae;font-weight:700}.highlight .dl,.highlight .s,.highlight .s1,.highlight .s2,.highlight .sa,.highlight .sc,.highlight .sd,.highlight .se,.highlight .sh,.highlight .ss,.highlight .sx{color:#0a3069}.highlight .fm,.highlight .nd,.highlight .nf{color:#8250df}.highlight .err{color:#f6f8fa;background-color:#82071e}.highlight .c,.highlight .c1,.highlight .cd,.highlight .ch,.highlight .cm,.highlight .cp,.highlight .cpf,.highlight .cs,.highlight .gl,.highlight .gt{color:#6e7781}.highlight .ni,.highlight .si{color:#24292f}.highlight .ge{color:#24292f;font-style:italic}.highlight .gs{color:#24292f;font-weight:700}
