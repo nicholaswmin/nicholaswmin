@@ -55,7 +55,7 @@ class Layout
   end
 
   def to_s = @html
-   #TODO fix dupe. readable/notwritable, review relation with Document
+  # TODO: fix dupe. readable/notwritable, review relation with Document
   def self.from(read) = ->(path) { new(path, read[path]) }
 end
 
@@ -182,15 +182,6 @@ end
 
 $PROGRAM_NAME = 'nix'
 
-Log = Logger.new(
-  $stdout,
-  level: ENV.fetch('LOG_LEVEL', 'DEBUG'), #FIXME not filtering
-  formatter: proc { |severity, _datetime, _progname, msg|
-    colored = "#{Color.new(severity)}#{severity} #{msg}#{Color.new}"
-    puts severity == 'FATAL' ? puts(msg) && raise(msg) : colored
-  }
-)
-
 class Color
   @@palette = { fatal: 31, error: 31, warn: 33, info: 32, reset: nil }
   def self.new(severity = '', enabled = !ENV['NO_COLOR'] && $stdout.tty?)
@@ -207,11 +198,11 @@ class ActionableError < StandardError
   end
 end
 
-def glob(...) = Pathname.glob(...) 
+def glob(...) = Pathname.glob(...)
 
 def write(base:, force: false)
   lambda do |document|
-    path = Pathname.new(base + document.path.to_s) #FIXME brittle, just concats
+    path = Pathname.new(base + document.path.to_s) # FIXME: brittle only concats
 
     FileUtils.mkdir_p path.dirname
     done = File.exist?(path) && !force ? false : File.write(path, document.data)
@@ -238,17 +229,27 @@ def build(base:, dest:, variables:)
   FileUtils.cp_r(File.join(base, 'public/'), File.join(dest, 'public'))
 end
 
+Log = Logger.new(
+  $stdout,
+  level: ENV.fetch('LOG_LEVEL', 'DEBUG'), # FIXME: not filtering
+  formatter: proc { |severity, _datetime, _progname, msg|
+    colored = "#{Color.new(severity)}#{severity} #{msg}#{Color.new}"
+    puts severity == 'FATAL' ? puts(msg) && raise(msg) : colored
+  }
+)
+
 params = {}
 opts = OptionParser.new do |o|
   o.on('-i', '--init',  'create new sample site')
   o.on('-b', '--build', 'build HTML to output')
   o.on('-s', '--serve [PORT]', 'build & serve site at port', Integer)
   o.on('-h', '--help', 'print this help')
-end 
+end
 opts.parse!(into: params)
 
 if params.key?(:help) || params.empty?
-  exit if puts "\n", "https://github.com/nicholaswmin/nix\n\n", opts.help, "\n"
+  puts("\n", "https://github.com/nicholaswmin/nix\n\n", opts.help, "\n")
+  exit
 end
 
 if params.key?(:init)
@@ -257,7 +258,7 @@ if params.key?(:init)
 end
 
 config = begin
-   YAML.load_file '_config.yml'
+  YAML.load_file '_config.yml'
 rescue StandardError
   raise Log.fatal ActionableError.new(
     'missing _config.yml',
@@ -273,4 +274,4 @@ end
 if params.key?(:serve)
   out = config['dest'].tr('./', '')
   exec "ruby -run -e httpd -- #{out} -p #{params[:serve] ||= '0'}"
-  end
+end
