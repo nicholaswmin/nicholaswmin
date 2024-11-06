@@ -1,20 +1,23 @@
 # nix
 
-> minimal static-site generator in 150 lines of [Ruby][rublang]
+> minimal static-site generator in 150 lines of [ruby][ruby]
 
 ```raw
 Usage: nix [options]
 
 nix  --init              create sample blog
 nix  --build             build static HTML
-nix  --serve [port]      serve locally
-nix  --watch [port]      rebuild on file change
+nix  --watch             rebuild on file change
+
+example:
+
+$ ruby nix.rb --init
 ```
 
 ## quick start 
  
-- create a repo foryour site, blog, whatever ...
-- just drop the [nix.rb]() file in it.
+- create a repo for your site, blog, whatever ...
+- just drop the [nix.rb](#download-nix) file in it.
 
 then:
 
@@ -31,8 +34,6 @@ ruby nix.rb --init
 - add images, videos, CSS in `/public`
 
 > posts include [syntax highlighting][rouge]
-
-... that's it.
 
 > build to static HTML, at `/build`
 
@@ -83,6 +84,23 @@ the rest is up to you.
 > in outline, but that every word tell
 
 The Elements of Style by William Strunk Jr (1918) ...
+``` 
+
+### Download nix
+
+`nix` is a single, self-contained file which includes everything necessary.
+
+apart from Ruby 3.5, which probably came pre-installed on your system,
+there's nothing to install.
+
+Just make sure you always have a `nix.rb` must always be present in the repository.
+
+- click on the `nix.rb` file in this repo
+- click on the gear button, then select `Download`
+
+
+```bash
+curl -O https://raw.githubusercontent.com/nicholaswmin/nix/refs/heads/main/nix.rb
 ```
 
 ## Quirks
@@ -142,7 +160,7 @@ end
 
 [nix]: https://github/com/nicholaswmin/nix
 [club]: https://1kb.club/
-[ruby]: https://ruby-doc.org/3.3.4/
+[ruby]: https://franzejr.github.io/best-ruby/
 [jekyll]: https://jekyllrb.com/
 [gh-pages]: https://pages.github.com/
 [gfm]: https://github.github.com/gfm/
@@ -150,7 +168,6 @@ end
 [pygments]: https://pygments.org/
 [file-rb]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
 [fi-join]: https://ruby-doc.org/3.3.2/File.html#method-c-join
-
 
 <!---d
 ---
