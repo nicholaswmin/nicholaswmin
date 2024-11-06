@@ -17,7 +17,7 @@ $ ruby nix.rb --init
 ## quick start 
  
 - create a repo for your site, blog, whatever ...
-- just drop the [nix.rb](#download-nix) file in it.
+- just drop the [nix.rb](#get-nix) file in it.
 
 then:
 
