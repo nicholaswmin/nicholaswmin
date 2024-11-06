@@ -116,7 +116,7 @@ class Post < MarkdownPage
   end
 
   def render(ctx)
-    "#{super}<link rel=\"stylesheet\" href=\"#{assets_url('highlight.css')}\">
+    "#{super}<link rel=\"stylesheet\" href=\"#{assets_url}highlight.css\">
     <link>"
   end
 end
