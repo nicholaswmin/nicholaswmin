@@ -35,7 +35,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Build Pages
-      - run: ruby nix.rb
+        run: ruby nix.rb
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
