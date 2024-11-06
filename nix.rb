@@ -1,9 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-APP_NAME = 'nix'
-APP_DESC = 'site generator'
-
 require 'bundler/inline'
 gemfile do
   source 'https://rubygems.org'
