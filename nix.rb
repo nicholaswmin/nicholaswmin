@@ -175,19 +175,20 @@ def serve(port:, dest:, **)
   exec "ruby -run -e httpd -- #{dest.tr('./', '')} -p #{port ||= 8000} ||= '0'}"
 end
 
-def init(url = './init.yml')
+def init(url: 'https://raw.github.com/nicholaswmin/nix/main/README.md')
+  puts color(:blue), "fetching #{url} ...", color(:reset)
   path = File.exist?(File.basename(url)) ? File.basename(url) : URI(url).open
   text = between(path.is_a?(URI) ? path.read : File.read(path), '<!---d', '-->')
   hash = YAML.load(text).inject(:merge)
-
   hash.keys.map(&Document.from(hash)).each(&writefile('./', force: true))
+
   puts color(:green), "init ok: #{Dir.pwd}", color(:reset)
 end 
 
 op = OptionParser.new(nil, 25, 'ruby nix.rb') do |o|
+  o.on '--init [url]', 'create sample blog' do _1 ? init(_1) : init() end
   o.on '--build', 'build static HTML' do |v| build(**config) end
-  o.on '--init [url]', 'create site' do _1 ? init(_1) : init() end
-  o.on '--serve [port]', 'run server' do serve(**{ port: _1, **config }) end
+  o.on '--serve [port]', 'serve locally' do serve(**{ port: _1, **config }) end
 end
 puts ARGV.empty? ? "\n#{op}\ndocs: https://github.com/nicholaswmin/nix\n\n" : ''
 op.parse!
