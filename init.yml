@@ -152,8 +152,12 @@
     - css are in `public/style.css`
     - configuration is in `_config.rb`
 
-    > but referenced at the root.
-
+    > **note:** assets are copied to the root, 
+    > not within a `public` folder.
+    > 
+    > good: `<img src="/felix.svg"></img>`
+    > bad : `<img src="/public/felix.svg"></img>`
+    
     ## serve locally
 
     ```bash
