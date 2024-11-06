@@ -139,10 +139,9 @@ def build(dest, config)
     .add(Dir['pages/index.md'].map(&Index.from(File.method(:read))))
     .compile(variables: config).each(&write_p(dest, force: true))
 
-  copy_dir('public/', to: dest)
+  FileUtils.cp_r('public/.', dest)
 end
 
-def copy_dir(dir, to:) = FileUtils.cp_r(dir, File.join(to, dir))
 def rmrf_dir(dir) = FileUtils.rm_rf(File.join(dir, '/'))
 def write_p(dest, force: false) = 
   lambda do |page|

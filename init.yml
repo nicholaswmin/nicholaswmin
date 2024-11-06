@@ -148,10 +148,11 @@
 
     additionally:
 
-    - images go in `public/`.
+    - images go in `public/`, 
     - css are in `public/style.css`
     - configuration is in `_config.rb`
 
+    > but referenced at the root.
 
     ## serve locally
 
@@ -174,7 +175,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="a blog site">
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='0' y='14'>{{favicon}}</text></svg>">
-        <link rel="stylesheet" href="/public/style.css">
+        <link rel="stylesheet" href="/style.css">
         <title>{{title}}</title>
     </head> 
 
@@ -324,7 +325,7 @@
     ... and this is an SVG image of **Felix The Housecat**:
 
 
-    ![Felix the Housecat, the cartoon](/public/felix.svg "Felix the Housecat")
+    ![Felix the Housecat, the cartoon](/felix.svg "Felix the Housecat")
 
     This project was inspired by: The [1kb club][1kb].
 
