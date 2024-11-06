@@ -108,7 +108,7 @@ class Post < MarkdownPage
   end
 
   def render(ctx)
-    "#{super}<link rel=\"stylesheet\" href=\"/public/highlight.css\"><link>"
+    "#{super}<link rel=\"stylesheet\" href=\"/highlight.css\"><link>"
   end
 end
 
