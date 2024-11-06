@@ -22,18 +22,17 @@
 
 - _config.yml: |
     # Site configuration
+    # note: these key/values can also be used as substitutions.
+    # i.e: {{author_name}} in a Post will be replaced with "John Doe"
 
     # required
     name: 'A blog'
     favicon: 🐇
-
-    base: './'
+    # must match static.yml workflow value:
     dest: './build'
 
-    # {{tokens}} in Page/Post content are replaced.
-    # i.e: {{author_name}} is replaced with "John Doe"
-
     # optional
+
     author_name: 'John Doe'
     author_user: 'nicholaswmin'
     author_city: 'London, W2'
@@ -179,7 +178,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="a blog site">
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='0' y='14'>{{favicon}}</text></svg>">
-        <link rel="stylesheet" href="{{baseurl}}/style.css">
+        <link rel="stylesheet" href="{{assets_url}}/style.css">
         <title>{{title}}</title>
     </head> 
 
