@@ -142,6 +142,8 @@ class Index < MarkdownPage
   end
 end
 
+def between(str, a, b) = str[/#{Regexp.escape(a)}(.*?)#{Regexp.escape(b)}/m, 1]
+
 def color(name, colors = { 'red': 31, 'yellow': 33, 'green': 32, blue: 34 })
   ENV['NO_COLOR'] || !STDOUT.tty? ? '' : "\e[0;#{colors[name.downcase.to_sym]}m"
 end
@@ -175,16 +177,17 @@ end
 
 def init(url = './init.yml')
   path = File.exist?(File.basename(url)) ? File.basename(url) : URI(url).open
-  hash = YAML.load(path.is_a?(URI) ? path.read : File.read(path)).inject(:merge)
+  text = between(path.is_a?(URI) ? path.read : File.read(path), '<!---d', '-->')
+  hash = YAML.load(text).inject(:merge)
+
   hash.keys.map(&Document.from(hash)).each(&writefile('./', force: true))
-  puts color(:green), 'init ok', color(:reset)
-end
+  puts color(:green), "init ok: #{Dir.pwd}", color(:reset)
+end 
 
 op = OptionParser.new(nil, 25, 'ruby nix.rb') do |o|
   o.on '--build', 'build static HTML' do |v| build(**config) end
   o.on '--init [url]', 'create site' do _1 ? init(_1) : init() end
   o.on '--serve [port]', 'run server' do serve(**{ port: _1, **config }) end
 end
-
-puts ARGV.empty? ? "\n#{op}\ndocs: https://github.com/nicholaswmin/nix\n\n" : ""
+puts ARGV.empty? ? "\n#{op}\ndocs: https://github.com/nicholaswmin/nix\n\n" : ''
 op.parse!
