@@ -115,19 +115,14 @@ class Index < MarkdownPage
     super('/index.html', markdown, 'Home')
   end
     
-  def is_post = ->(page) { page.is_a?Post } 
-  def posts(ctx) = ctx[:pages].filter(&is_post).sort_by(&:date).reverse
+  def post? = ->(page) { page.is_a?Post } 
+  def posts(ctx) = ctx[:pages].filter(&post?).sort_by(&:date).reverse
 
   def render(ctx)    
     super + "<ul class=\"list\">%s</ul>" % posts(ctx).reduce(+'') do 
-      |list, post| list << <<~BODY
-        <li>
-          <a href="/posts/#{post.name}">
-            <h3>#{post.title}</h3>
-            <small>#{post.date.strftime('%b, %Y')}</small>
-          </a>
-        </li>
-      BODY
+      |list, p| list << "<li>
+        <a href=\"/posts/%<name>s\"><h3>%<head>s</h3><small>%<year>s</small></a>
+      </li>" % { head: p.title, year: p.date.strftime('%b, %Y'), name: p.name }
     end
   end
 end
