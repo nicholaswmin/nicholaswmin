@@ -68,11 +68,11 @@ class HTMLPage < Document
         <main class="#{type} #{name}">#{render(ctx)}</main>
       #{layouts['footer']}
     BODY
-    @data = replace(html, ctx[:variables].merge({ base_url: base_url }))
+    @data = replace(html, ctx[:variables].merge({ assets_url: assets_url }))
     self
   end
   
-  def base_url(basename = '')
+  def assets_url(basename = '')
     File.join(path.each_filename.to_a.drop(1).map { '../' }
       .join(''), basename).delete_prefix('/')
   end
@@ -116,7 +116,7 @@ class Post < MarkdownPage
   end
 
   def render(ctx)
-    "#{super}<link rel=\"stylesheet\" href=\"#{base_url('highlight.css')}\">
+    "#{super}<link rel=\"stylesheet\" href=\"#{assets_url('highlight.css')}\">
     <link>"
   end
 end
