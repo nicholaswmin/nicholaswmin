@@ -34,6 +34,10 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+
+      - name: Init sample
+        run: ruby nix.rb -i "https://raw.githubusercontent.com/nicholaswmin/nix/main/init.yml"
+
       - name: Build Pages
         run: ruby nix.rb
 
