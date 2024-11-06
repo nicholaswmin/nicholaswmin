@@ -40,7 +40,7 @@
 
 
 - .github/workflows/static.yml: |
-   name: Deploy static HTML to Pages
+    name: Deploy static HTML to Pages
     
     on:
       push:
