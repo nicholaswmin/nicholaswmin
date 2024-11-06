@@ -145,7 +145,7 @@
     The Elements of Style by William Strunk Jr (1918) ...
     ```
 
-    additionally:
+      additionally:
 
     - images go in `public/`, 
     - css are in `public/style.css`
@@ -158,10 +158,10 @@
     > bad : `<img src="/public/felix.svg"></img>`
     > bad : `<img src="/felix.svg"></img>`
 
-    this is because of known Github quirk of not being  
+    this is because of the known Github quirk of not being  
     actually hosted on the root itself unless the repository   
-    is named exactly as your `<username>`. Jekyll does 
-    this with a rewrite-url plugin, nix does it by default.  
+    is named exactly as your `<username>`. 
+    Jekyll does this with a rewrite-url plugin, nix does it by default.  
   
     The same can work in code using the `root_url` attribute,   
     in case you're extending `nix`:
@@ -203,8 +203,8 @@
 
     <nav>
         <ul>
-        <li><a href="/">posts</a></li>
-        <li><a href="/about">about </a></li>
+        <li><a href="{{root_url}}">posts</a></li>
+        <li><a href="{{root_url}}cv">CV</a></li>
         </ul>
     </nav>
 
@@ -347,7 +347,7 @@
     ... and this is an SVG image of **Felix The Housecat**:
 
 
-    ![Felix the Housecat, the cartoon](/felix.svg "Felix the Housecat")
+    ![Felix the Housecat, the cartoon]({{root_url}}felix.svg "Felix the Housecat")
 
     This project was inspired by: The [1kb club][1kb].
 
