@@ -4,71 +4,49 @@
 require 'bundler/inline'
 gemfile do
   source 'https://rubygems.org'
-  gem 'webrick', '~> 1.9.0', require: true
-  gem 'optparse', '~> 0.4.0', require: true
-  gem 'open-uri', '~> 0.4.1', require: true
-  gem 'logger', '~> 1.6.0', require: true
+  gem 'date', '~> 3.4.0', require: true
   gem 'kramdown', '~> 2.4.0', require: true
   gem 'kramdown-parser-gfm', '~> 1.1.0', require: true
   gem 'rouge', '~> 4.4.0', require: true
 end
 
 class Site
-  attr_reader :layouts, :variables
+  attr_reader :pages, :layouts
 
   def initialize(layouts = [])
-    @variables = nil
     @layouts = layouts.to_h { |layout| [layout.name, layout] }
-    @docs = []
+    @pages = []
   end
 
-  def add(pages)
-    @docs += pages
+  def add(new_pages)
+    @pages += new_pages
     self
   end
 
-  def pages
-    @docs.filter { |doc| doc.is_a?(HTMLPage) }
-  end
-
   def compile(variables:)
-    @variables = variables
-    @docs
-      .map(&compile_page)
-      .flatten
-      .uniq(&:path)
-  end
-
-  def compile_page
-    lambda do |page|
-      page.compile layouts:, ctx: { pages:, variables: }
-    end
-  end
-end
-
-class Layout
-  attr_reader :name
-
-  def initialize(path, html)
-    @name = path.basename(path.extname).to_s
-    @html = html
-  end
-
-  def to_s = @html
-  # TODO: fix dupe. readable/notwritable, review relation with Document
-  def self.from(read) = ->(path) { new(path, read[path]) }
+    @pages.map do |page| 
+      page.compile(layouts:, ctx: { pages:, variables: })
+    end.flatten.uniq(&:path)
+  end  
 end
 
 class Document
   attr_reader :path, :name, :data
 
-  def initialize(path, data = nil)
+  def initialize(path, data = nil, name = nil)
     @path = Pathname.new path.to_s
-    @name = @path.parent.basename.to_s
+    @name = name ||= @path.parent.basename.to_s
     @data = data
   end
 
-  def self.from(read) = ->(path) { new(path, read[path]) }
+  def self.from(reader) = ->(path) { new(Pathname.new(path), reader[path]) }
+end
+
+class Layout < Document
+  def initialize(path, html)
+    super(path, html, path.basename(path.extname).to_s)
+  end
+  def to_s = @data
 end
 
 class HTMLPage < Document
@@ -80,29 +58,20 @@ class HTMLPage < Document
   def compile(layouts:, ctx:)
     type = self.class.to_s.downcase
     name = @path.basename(@path.extname).to_s
-
     html = <<~BODY
       #{layouts['header']}
         <main class="#{type} #{name}">#{render(ctx)}</main>
-       #{layouts['footer']}
+      #{layouts['footer']}
     BODY
-
     @data = replace(html, ctx[:variables])
-
     self
   end
 
   def render(*) = ''
-  def to_s = @data
 
-  private
-
-  def replace(html, variables)
-    {
-      **variables,
-      'title' => @title,
-      'bytes' => html.gsub(/\s+/, '').bytesize.to_s
-    }
+  private def bytesize(html) = html.gsub(/\s+/, '').bytesize.to_s
+  private def replace(html, variables)
+    { **variables, 'title' => @title, 'bytes' => bytesize(html) }
       .reduce(html) do |replaced, (variable, value)|
       replaced.gsub("{{#{variable}}}", value.to_s)
     end
@@ -113,21 +82,12 @@ class MarkdownPage < HTMLPage
   attr_reader :title
 
   def initialize(path, markdown, title = nil)
-    super(path:, title: title || to_title(markdown))
+    super(path:, title: title || markdown.lines.first[2..].strip)
     @markdown = markdown
   end
 
   def render(ctx)
-    super +
-      Kramdown::Document
-      .new(@markdown, { input: 'GFM', syntax_highlighter: 'rouge' })
-      .to_html
-  end
-
-  private
-
-  def to_title(mdn)
-    mdn.lines.first&.start_with?('# ') ? mdn.lines.first[2..].strip : 'untitled'
+    super + Kramdown::Document.new(@markdown, { input: 'GFM' }).to_html
   end
 end
 
@@ -142,11 +102,7 @@ class Post < MarkdownPage
 
   def initialize(path, markdown)
     super("/posts/#{path.basename(path.extname)}/index.html", markdown)
-    @date = begin
-      Date.parse(markdown.lines[2]&.strip || '')
-    rescue StandardError
-      Date.today
-    end
+    @date = Date.parse(markdown.lines[2]&.strip || '')
   end
 
   def render(ctx)
@@ -158,120 +114,47 @@ class Index < MarkdownPage
   def initialize(_path, markdown)
     super('/index.html', markdown, 'Home')
   end
+    
+  def is_post = ->(page) { page.is_a?Post } 
+  def posts(ctx) = ctx[:pages].filter(&is_post).sort_by(&:date).reverse
 
-  def render(ctx)
-    posts = ctx[:pages].filter { |page| page.instance_of?(::Post) }
-    list_items = posts.sort_by(&:date).reverse.reduce(+'') do |list, post|
-      list << <<~BODY
+  def render(ctx)    
+    super + "<ul class=\"list\">%s</ul>" % posts(ctx).reduce(+'') do 
+      |list, post| list << <<~BODY
         <li>
           <a href="/posts/#{post.name}">
-            <h3>#{post.title}</h3>#{' '}
-            <small>#{post.date.strftime('%b, %Y')}</small>#{' '}
+            <h3>#{post.title}</h3>
+            <small>#{post.date.strftime('%b, %Y')}</small>
           </a>
         </li>
       BODY
     end
-
-    super + <<~BODY.squeeze("\n")
-      <ul class="list">
-        #{list_items}
-      </ul>
-    BODY
   end
 end
 
-$PROGRAM_NAME = 'nix'
+def build(dest, config)
+  rmrf_dir(dest)
 
-class Color
-  @@palette = { fatal: 31, error: 31, warn: 33, info: 32, reset: nil }
-  def self.new(severity = '', enabled = !ENV['NO_COLOR'] && $stdout.tty?)
-    enabled ? "\e[#{@@palette[severity.downcase.to_sym] || 0}m" : ''
-  end
-end
-
-class ActionableError < StandardError
-  def initialize(msg, action: nil)
-    super(<<~BODY)
-      #{Color.new(:error)}\n#{msg}#{Color.new}\n
-      #{Color.new(:warn)}#{action}#{Color.new}\n
-    BODY
-  end
-end
-
-def glob(...) = Pathname.glob(...)
-
-def write(base:, force: false)
-  lambda do |document|
-    path = Pathname.new(base + document.path.to_s) # FIXME: brittle only concats
-
-    FileUtils.mkdir_p path.dirname
-    done = File.exist?(path) && !force ? false : File.write(path, document.data)
-    done ? Log.debug("wrote #{path}") : Log.warn("skipped #{path}. exists")
-  end
-end
-
-def init(url:)
-  path = File.exist?(File.basename(url)) ? File.basename(url) : URI(url)
-  hash = YAML.load(path.is_a?(URI) ? path.read : File.read(path)).inject(:merge)
-  hash.keys.map(&Document.from(hash)).each(&write(base: './'))
-end
-
-def build(base:, dest:, variables:)
-  FileUtils.rm_rf(glob("#{dest}/*", base:))
   Site
-    .new(glob('_layouts/*.html', base:).map(&Layout.from(File.method(:read))))
-    .add(glob('posts/*[^index]*.md', base:).map(&Post.from(File.method(:read))))
-    .add(glob('pages/*[^index]*.md', base:).map(&Page.from(File.method(:read))))
-    .add(glob('pages/index.md', base:).map(&Index.from(File.method(:read))))
-    .compile(variables:)
-    .each(&write(base: dest, force: true))
+    .new(Dir['_layouts/*.html'].map(&Layout.from(File.method(:read))))
+    .add(Dir['posts/*.md'].map(&Post.from(File.method(:read))))
+    .add(Dir['pages/*[^index]*.md'].map(&Page.from(File.method(:read))))
+    .add(Dir['pages/index.md'].map(&Index.from(File.method(:read))))
+    .compile(variables: config)
+    .each(&write_p(dest))
 
-  FileUtils.cp_r(File.join(base, 'public/'), File.join(dest, 'public'))
+  copy_dir('public/', to: dest)
 end
 
-Log = Logger.new(
-  $stdout,
-  level: ENV.fetch('LOG_LEVEL', 'DEBUG'), # FIXME: not filtering
-  formatter: proc { |severity, _datetime, _progname, msg|
-    colored = "#{Color.new(severity)}#{severity} #{msg}#{Color.new}"
-    puts severity == 'FATAL' ? puts(msg) && raise(msg) : colored
-  }
-)
-
-params = {}
-opts = OptionParser.new do |o|
-  o.on('-i', '--init',  'create new sample site')
-  o.on('-b', '--build', 'build HTML to output')
-  o.on('-s', '--serve [PORT]', 'build & serve site at port', Integer)
-  o.on('-h', '--help', 'print this help')
-end
-opts.parse!(into: params)
-
-if params.key?(:help) || params.empty?
-  puts("\n", "https://github.com/nicholaswmin/nix\n\n", opts.help, "\n")
-  exit
+def copy_dir(dir, to:) = FileUtils.cp_r(dir, File.join(to, dir))
+def rmrf_dir(dir) = FileUtils.rm_rf(File.join(dir, '/'))
+def write_p(dest) = 
+  lambda do |page|
+    FileUtils.mkdir_p(File.dirname(File.join(dest, page.path)))
+    File.write(File.join(dest, page.path), page.data)
 end
 
-if params.key?(:init)
-  init(url: 'https://raw.githubusercontent.com/nicholaswmin/nix/main/init.yml')
-  Log.info 'init ok'
-end
-
-config = begin
-  YAML.load_file '_config.yml'
-rescue StandardError
-  raise Log.fatal ActionableError.new(
-    'missing _config.yml',
-    action: "If you didnt create a site yet, run:\n\n$ ruby nix.rb --init"
-  )
-end
-
-if params.key?(:build) || params.key?(:serve)
-  build base: config['base'], dest: config['dest'], variables: config
-  Log.info 'build ok'
-end
-
-if params.key?(:serve)
-  out = config['dest'].tr('./', '')
-  exec "ruby -run -e httpd -- #{out} -p #{params[:serve] ||= '0'}"
-end
+config = YAML.load_file('_config.yml', symbolize_names: true)
+build(config[:dest], config)
+puts 'build ok'
+exec "ruby -run -e httpd -- #{config[:dest].sub('./', '')} -p 8081 ||= '0'}"
