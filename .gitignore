@@ -1,10 +1,9 @@
 # blog files
 _config.yml
 _layouts
-posts
-pages
-public
-build
+/posts
+pages/
+/public
 init.yml
 
 # misc.
