@@ -2,7 +2,7 @@ name: Deploy static HTML to Pages
 
 on:
   push:
-    branches: [$default-branch, 'refactor-b']
+    branches: [$default-branch]
 
   # allow manual runs from the Actions tab
   workflow_dispatch:
@@ -26,18 +26,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Ruby 3
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Setup Ruby 3.3.5
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3.5'
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Fetch initial assets
+        run: ruby nix.rb --init https://raw.githubusercontent.com/nicholaswmin/nix/main/init.yml
 
-      - name: Fetch initial site assets
-        run: ruby nix.rb --init https://raw.githubusercontent.com/nicholaswmin/nix/8e50218e5a219c260b4d4e3e43c97ef91682227c/init.yml
-        
-      - name: Build static HTML pages
+      - name: Build site
         run: ruby nix.rb --build
 
       - name: Upload artifact
@@ -45,6 +45,7 @@ jobs:
         with:
           # must match value of `_config.yml`:`dest`
           path: './build'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
