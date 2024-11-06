@@ -180,7 +180,7 @@ end
 
 op = OptionParser.new(nil, 25, 'ruby nix.rb') do |o|
   o.on '--build', 'build static HTML' do |v| build(**config) end
-  o.on '--init [url]', 'create site' do _1 ? init(url: _1) : init() end
+  o.on '--init [url]', 'create site' do _1 ? init(_1) : init() end
   o.on '--serve [port]', 'run server' do serve(**{ port: _1, **config }) end
 end
 
