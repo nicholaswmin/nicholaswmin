@@ -55,10 +55,15 @@ The Elements of Style by William Strunk Jr (1918) ...
 
 additionally:
 
-- images go in `public/`.
+- images go in `public/`, 
 - css are in `public/style.css`
 - configuration is in `_config.rb`
 
+> **note:** assets are copied to the root, 
+> not within a `public` folder.
+> 
+> good: `<img src="/felix.svg"></img>`
+> bad : `<img src="/public/felix.svg"></img>`
 
 ## serve locally
 

@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+APP_NAME = 'nix'
+APP_DESC = 'site generator'
+
 require 'bundler/inline'
 gemfile do
   source 'https://rubygems.org'
@@ -65,10 +68,15 @@ class HTMLPage < Document
         <main class="#{type} #{name}">#{render(ctx)}</main>
       #{layouts['footer']}
     BODY
-    @data = replace(html, ctx[:variables])
+    @data = replace(html, ctx[:variables].merge({ base_url: base_url }))
     self
   end
-
+  
+  def base_url(basename = '')
+    File.join(path.each_filename.to_a.drop(1).map { '../' }
+      .join(''), basename).delete_prefix('/')
+  end
+  
   def render(*) = ''
 
   private def bytesize(html) = html.gsub(/\s+/, '').bytesize.to_s
@@ -108,9 +116,12 @@ class Post < MarkdownPage
   end
 
   def render(ctx)
-    "#{super}<link rel=\"stylesheet\" href=\"/highlight.css\"><link>"
+    "#{super}<link rel=\"stylesheet\" href=\"#{base_url('highlight.css')}\">
+    <link>"
   end
 end
+
+def config = YAML.load_file('_config.yml', symbolize_names: true) 
 
 class Index < MarkdownPage
   def initialize(_path, markdown)
@@ -121,47 +132,57 @@ class Index < MarkdownPage
   def posts(ctx) = ctx[:pages].filter(&post?).sort_by(&:date).reverse
 
   def render(ctx)    
-    super + "<ul class=\"list\">%s</ul>" % posts(ctx).reduce(+'') do 
+     "%s <ul class=\"list\">%s</ul>" % [super, posts(ctx).reduce(+'') do 
       |list, p| list << "<li>
         <a href=\"/posts/%<name>s\"><h3>%<head>s</h3><small>%<year>s</small></a>
       </li>" % { head: p.title, year: p.date.strftime('%b, %Y'), name: p.name }
-    end
+    end]
   end
 end
 
-def build(dest, config)
-  rmrf_dir(dest)
+def color(name, colors = { 'red': 31, 'yellow': 33, 'green': 32, blue: 34 })
+  ENV['NO_COLOR'] || !STDOUT.tty? ? '' : "\e[0;#{colors[name.downcase.to_sym]}m"
+end
+
+def writefile(dest, force: false) = 
+  lambda do |page|
+    FileUtils.mkdir_p(File.dirname(File.join(dest, page.path)))
+    if File.exist?(page.path) && !force 
+      return 
+    end
+    File.write(File.join(dest, page.path), page.data)
+end
+
+def build(dest:, **variables)
+  FileUtils.rm_rf(File.join(dest, '/'))
 
   Site
     .new(Dir['_layouts/*.html'].map(&Layout.from(File.method(:read))))
     .add(Dir['posts/*.md'].map(&Post.from(File.method(:read))))
     .add(Dir['pages/*[^index]*.md'].map(&Page.from(File.method(:read))))
     .add(Dir['pages/index.md'].map(&Index.from(File.method(:read))))
-    .compile(variables: config).each(&write_p(dest, force: true))
+    .compile(variables:).each(&writefile(dest, force: true))
 
   FileUtils.cp_r('public/.', dest)
+  puts color(:green), 'build: ok', color(:reset)
 end
-
-def rmrf_dir(dir) = FileUtils.rm_rf(File.join(dir, '/'))
-def write_p(dest, force: false) = 
-  lambda do |page|
-    FileUtils.mkdir_p(File.dirname(File.join(dest, page.path)))
-    unless File.exist?(page.path) && !force
-      File.write(File.join(dest, page.path), page.data)
-      end
+  
+def serve(port:, dest:, **)
+  exec "ruby -run -e httpd -- #{dest.tr('./', '')} -p #{port ||= 8000} ||= '0'}"
 end
 
 def init(url = './init.yml')
   path = File.exist?(File.basename(url)) ? File.basename(url) : URI(url).open
   hash = YAML.load(path.is_a?(URI) ? path.read : File.read(path)).inject(:merge)
-  hash.keys.map(&Document.from(hash)).each(&write_p('./', force: true))
-  puts 'init ok'
+  hash.keys.map(&Document.from(hash)).each(&writefile('./', force: true))
+  puts color(:green), 'init ok', color(:reset)
 end
 
-op = OptionParser.new do |parser|
-  parser.on'-i [x]', 'create sample' do _1 ? init(_1) : init() end
-end; op.parse!  
+op = OptionParser.new(nil, 25, 'ruby nix.rb') do |o|
+  o.on '--build', 'build static HTML' do |v| build(**config) end
+  o.on '--init [url]', 'create site' do _1 ? init(url: _1) : init() end
+  o.on '--serve [port]', 'run server' do serve(**{ port: _1, **config }) end
+end
 
-config = YAML.load_file('_config.yml', symbolize_names: true) 
-build(config[:dest], config)
-puts 'build ok'
+puts ARGV.empty? ? "\n#{op}\ndocs: https://github.com/nicholaswmin/nix\n\n" : ""
+op.parse!
