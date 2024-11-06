@@ -1,0 +1,106 @@
+/* tweak this to your preference. */ 
+
+/* theme */
+
+:root {
+  --bg-color: #fafafa; 
+  --bg-color-full: #fff;
+  --primary-color: #00695C;
+  --secondary-color: #3700B3;
+  --font-color: #555; 
+  --font-color-lighter: #777;
+  --font-color-lightest: #ccc;
+  --font-size: 14px; 
+}
+
+/* layout */
+
+* { 
+  font-family: monospace; font-size: var(--font-size);
+  font-weight:normal; text-decoration: none;
+}
+
+body { 
+  /* must fit exactly 80-chars in code snippets */
+  max-width: 110ex; margin: 1em auto; padding: 0 1em;
+  background: var(--bg-color); color: var(--font-color); 
+  overflow-y: scroll;
+}
+body::selection { background: var(--font-color-lightest); }
+main { padding: 1.5em 0; }
+img { margin: 2em 0; max-width: 100%; }
+
+/* typography */
+
+p { padding: 1em 0; }
+a { color: var(--primary-color); font-size: inherit; }
+a:hover { color: var(--link-color-hover);  }
+blockquote { font-style: italic; }
+blockquote > p { display:inline; }
+
+h1, h2, h3, h4, h5, p, blockquote, pre { line-height: 1.5; padding: 0.5em 0; }
+h1 { font-size: 1.75em; } h2 { font-size: 1.5em; } h3 { font-size: 1.25em;  }
+h4, h4 *, small, small * { font-size: 0.9em; color: var(--font-color-lighter); }
+h1, h2, h3 { margin: 1.5em 0 1em 0; }
+h1, h2 { border-bottom: 1px solid var(--font-color-lightest); }
+
+/* lists */
+
+ul { 
+  display: block; padding-left: 1em; margin: 2em 0; list-style-type: '- ';
+  h1, h2, h3, h4, h5, h6 { margin: 0; padding: 0.25em 0; } 
+  h3 { color: var(--primary-color); }
+  li { margin: 1em 0; }
+}
+
+/* navigation */
+
+nav, footer {
+  padding: 1em 0;s
+  ul { display: block; margin: 0; padding-left: 0; }
+  li { display: inline-block; margin-right: 2em;  }
+  li a { color: var(--font-color); }
+  small { display: inline-block; margin-top: 2em; }
+}
+
+/* printer */
+
+@media print { 
+  body { width: auto; } 
+  nav, footer { display: none; }
+}
+
+/* post page */
+
+.post { 
+  h1:first-of-type, 
+  h2:first-of-type { margin-bottom: 0; }
+  code { 
+    padding: 2px 6px; border-radius: 0; font-size: 1em; 
+    background: var(--font-color-lightest); 
+  }
+  
+  pre {
+    font-size: 1.1em; padding: 2em; border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24); word-wrap: break-word;
+    background: var(--bg-color-full);
+    code { 
+      display: block; background: var(--bg-color-full);
+      white-space: break-spaces; 
+    }
+  }
+      
+  blockquote { 
+    background: none;
+    border-left: 2px solid var(--font-color-lightest);
+    border-radius: 0; margin: 2em 0; padding: 1em; font-style: normal;
+    p { color: var(--font-color-lighter); }
+  }
+  
+  hr { 
+    margin: 2.5em 0 2.5em 0; border: 0.5px solid;
+    border-color: var(--font-color-lightest);
+  }
+
+  .footnotes { margin-top: 2em; }
+}

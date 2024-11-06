@@ -26,7 +26,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Ruby
+      - name: Setup Ruby 3
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.1'

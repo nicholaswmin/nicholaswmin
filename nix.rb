@@ -5,6 +5,8 @@ require 'bundler/inline'
 gemfile do
   source 'https://rubygems.org'
   gem 'date', '~> 3.4.0', require: true
+  gem 'optparse', '~> 0.4.0', require: true
+  gem 'open-uri', '~> 0.4.1', require: true
   gem 'kramdown', '~> 2.4.0', require: true
   gem 'kramdown-parser-gfm', '~> 1.1.0', require: true
   gem 'rouge', '~> 4.4.0', require: true
@@ -135,21 +137,32 @@ def build(dest, config)
     .add(Dir['posts/*.md'].map(&Post.from(File.method(:read))))
     .add(Dir['pages/*[^index]*.md'].map(&Page.from(File.method(:read))))
     .add(Dir['pages/index.md'].map(&Index.from(File.method(:read))))
-    .compile(variables: config)
-    .each(&write_p(dest))
+    .compile(variables: config).each(&write_p(dest, force: true))
 
   copy_dir('public/', to: dest)
 end
 
 def copy_dir(dir, to:) = FileUtils.cp_r(dir, File.join(to, dir))
 def rmrf_dir(dir) = FileUtils.rm_rf(File.join(dir, '/'))
-def write_p(dest) = 
+def write_p(dest, force: false) = 
   lambda do |page|
     FileUtils.mkdir_p(File.dirname(File.join(dest, page.path)))
-    File.write(File.join(dest, page.path), page.data)
+    unless File.exist?(page.path) && !force
+      File.write(File.join(dest, page.path), page.data)
+      end
 end
 
-config = YAML.load_file('_config.yml', symbolize_names: true)
+def init(url = './init.yml')
+  path = File.exist?(File.basename(url)) ? File.basename(url) : URI(url).open
+  hash = YAML.load(path.is_a?(URI) ? path.read : File.read(path)).inject(:merge)
+  hash.keys.map(&Document.from(hash)).each(&write_p('./', force: true))
+  puts 'init ok'
+end
+
+op = OptionParser.new do |parser|
+  parser.on'-i [x]', 'create sample' do _1 ? init(_1) : init() end
+end; op.parse!  
+
+config = YAML.load_file('_config.yml', symbolize_names: true) 
 build(config[:dest], config)
 puts 'build ok'
-exec "ruby -run -e httpd -- #{config[:dest].sub('./', '')} -p 8081 ||= '0'}"
