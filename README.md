@@ -86,22 +86,21 @@ the rest is up to you.
 The Elements of Style by William Strunk Jr (1918) ...
 ``` 
 
-### Download nix
+### get nix
 
-`nix` is a single, self-contained file which includes everything necessary.
+`nix` is just a single-file; it's max 150 lines of code & it includes everything 
+necessary to develop and publish a [ridicously minimal][club] yet functional 
+blog site. 
 
-apart from Ruby 3.5, which probably came pre-installed on your system,
-there's nothing to install.
-
-Just make sure you always have a `nix.rb` must always be present in the repository.
-
-- click on the `nix.rb` file in this repo
-- click on the gear button, then select `Download`
-
+grab it from this repo [directly][download], or just `curl` it:
 
 ```bash
-curl -O https://raw.githubusercontent.com/nicholaswmin/nix/refs/heads/main/nix.rb
+curl -O https://raw.githubusercontent.com/nicholaswmin/nix/main/nix.rb
 ```
+
+apart from [Ruby 3.3][ruby], which probably came pre-installed on your system,
+there's nothing to install. You don't need to run `gem install`. 
+It's not available as a `gem` either; this is intentional.
 
 ## Quirks
 
@@ -168,6 +167,8 @@ end
 [pygments]: https://pygments.org/
 [file-rb]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
 [fi-join]: https://ruby-doc.org/3.3.2/File.html#method-c-join
+[ruby]: https://ruby-doc.org/3.3.5/
+[download]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
 
 <!---d
 ---
