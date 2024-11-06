@@ -25,13 +25,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby
+        with:
+          ruby-version: '3.1'
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
+      - name: Build Pages
+      - run: ruby nix.rb
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload the build directory.
-          # must match value of `./_config.yml`:`dest`
+          # must match value of `_config.yml`:`dest`
           path: './build'
       - name: Deploy to GitHub Pages
         id: deployment
