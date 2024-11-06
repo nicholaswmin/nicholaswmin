@@ -135,7 +135,12 @@ class Index < MarkdownPage
      "%s <ul class=\"list\">%s</ul>" % [super, posts(ctx).reduce(+'') do 
       |list, p| list << "<li>
         <a href=\"/posts/%<name>s\"><h3>%<head>s</h3><small>%<year>s</small></a>
-      </li>" % { head: p.title, year: p.date.strftime('%b, %Y'), name: p.name }
+      </li>" % { 
+        head: p.title, 
+        link: "#{root_url}posts/#{p.name}",
+        year: p.date.strftime('%b, %Y'), 
+        name: p.name 
+      }
     end]
   end
 end
