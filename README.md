@@ -342,6 +342,7 @@ From the Unix-Haters handbook
 # - each key is a filename. The file contents are listed under each key.
 
 - .gitignore: |
+    .gitignore
     _config.yml
     _layouts
     posts
@@ -640,7 +641,7 @@ From the Unix-Haters handbook
     main { padding: 0;  margin: 0 auto; }
     nav, footer { ul { display: block; margin: 0; padding-left: 0; }
       li { display: inline-block; margin-right: 2em; a { color: var(--font-col); } }
-      small,li { display: inline-block; margin-top: 2em; }
+      small,li {  display: inline-block; margin-top: 2em; }
     }
 
     /* Typebase.css (avoid changing, they keep vertical rhythm) */

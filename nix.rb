@@ -136,7 +136,7 @@ class Index < MarkdownPage
         head: p.title, 
         link: root_url("posts/#{p.name}"),
         year: p.date.strftime('%b, %Y'), 
-        name: p.name 
+        name: p.name  
       }
     end]
   end
@@ -176,7 +176,6 @@ def serve(port:, dest:, **)
 end
 
 def init(url: 'https://raw.github.com/nicholaswmin/nix/main/README.md')
-  puts color(:blue), "fetching #{url} ...", color(:reset)
   path = File.exist?(File.basename(url)) ? File.basename(url) : URI(url).open
   text = between(path.is_a?(URI) ? path.read : File.read(path), '<!---d', '-->')
   hash = YAML.load(text).inject(:merge)
