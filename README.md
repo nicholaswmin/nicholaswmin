@@ -181,18 +181,6 @@ While the whole thing looks more like a code-golfing joke than anything
 substantial, it's philosophy is based around serious ideas that emerged 
 in MIT and Berkley around the 80s(?), regarding software architecture design. 
 
-The 2 schools can be summed up up very easily if personified as caricatures.
-One is your laid-back cousin who slaps some tape on the broken window; 
-it more or less works. He then uses the time saved to get wasted at the bar.
-The end.
-
-Your other cousin wears turtlenecks and talks a lot about operas and ballets.
-This guy would be off the charts creepy on the sheer scale of his concocted 
-pretentiousness alone - the problem is that that the  20 hours he wasted on a 
-window-solution have produced an amazing looking window frame that looks as if 
-it was commisioned by a woodworking artist that's been solely devoted to his 
-craft for the past 30 years. 
-
 Despite their similarities. `wruby` is written entirely procedurally. 
 There is a clear *lack* of architecture and you can more or less describe it
 as a cooking recipe.
