@@ -425,7 +425,7 @@ From the Unix-Haters handbook
     <nav>
         <ul>
         <li><a href="{{root_url}}">posts</a></li>
-        <li><a href="{{root_url}}about">CV</a></li>
+        <li><a href="{{root_url}}about">cv</a></li>
         </ul>
     </nav>
 
@@ -438,38 +438,38 @@ From the Unix-Haters handbook
     hello world
 
 - pages/about.md: |
-    CV
+    cv
 
     {{author_name}}
     [{{author_user}}][author-url]
     {{author_city}}
 
-    - ### ACME Industries
-        #### 2015 - now  
-        #### London, United Kingdom
+    - ACME Industries
+      - 2015 - now  
+      - London, United Kingdom
 
-    - ### Foo/Bar GmbH
-        #### Dec 22' - May 23'
-        #### Munich, Germany
+    - Foo/Bar GmbH
+      - Dec 22' - May 23'
+      - Munich, Germany
 
-    - ### Ski Instructor
-        #### Dec 22' - May 23'
-        #### Rhône-Alpes, France
+    - Ski Instructor
+        - Dec 22' - May 23'
+        - Rhône-Alpes, France
 
-    - ### Looney Tunes LLC
-        #### Dec 16' - Nov 20'
-        #### Madrid, Spain
+    - Looney Tunes LLC
+      - Dec 16' - Nov 20'
+      - Madrid, Spain
 
-    - ### The Animaniacs LLC
-        #### Jun 14' - Apr 15'
-        #### New York, USA  
+    - The Animaniacs LLC
+      - Jun 14' - Apr 15'
+      - New York, USA  
 
-    ## Schools
+    #### Schools
 
-    - ### University of Westminster
-        #### BSc Information Systems
-        #### London, UK  
-        #### 2009 - 2013
+    - University of Westminster
+      - BSc Information Systems
+      - London, UK  
+      - 2009 - 2013
 
     [author-url]: https://github.com/{{author_user}}
 
