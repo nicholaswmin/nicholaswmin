@@ -349,7 +349,7 @@ From the Unix-Haters handbook
     # required
     name: 'John Does blog'
     description: 'a blog about rabbits'
-    favicon: 🐇
+    favicon: 🧸
     # must match static.yml workflow value:
     dest: './build'
 
