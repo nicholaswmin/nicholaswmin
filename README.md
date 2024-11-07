@@ -2,22 +2,18 @@
 
 > minimal static-site generator in 150 lines of [ruby][ruby]
 
-```raw
+```bash
 Usage: nix [options]
 
-nix  --init              create sample blog
-nix  --build             build static HTML
-nix  --watch             rebuild on file change
-
-example:
-
-$ ruby nix.rb --init
+nix  --init            create sample blog
+nix  --build           build static HTML
+nix  --watch           rebuild on file change
 ```
 
 ## quick start 
  
 - create a repo for your site, blog, whatever ...
-- just drop the [nix.rb](#get-nix) file in it.
+- copy/paste the drop the [nix.rb](#get-nix) file in it.
 
 then:
 
@@ -33,7 +29,14 @@ ruby nix.rb --init
 - add [markdown][gfm] pages in `/pages`
 - add images, videos, CSS in `/public`
 
-> posts include [syntax highlighting][rouge]
+posts include [syntax highlighting][rouge], 
+just wrap them in code fences (\`\`\`) as usual:
+
+```js
+const hello = 'world'
+```
+
+moving on..
 
 > build to static HTML, at `/build`
 
