@@ -341,18 +341,6 @@ From the Unix-Haters handbook
 # - It then iterates through the keys and creates a file for each.
 # - each key is a filename. The file contents are listed under each key.
 
-- .gitignore: |
-    .gitignore
-    _config.yml
-    _layouts
-    posts
-    pages
-    public
-    build
-
-    .DS_Store
-    scratch
-
 - _config.yml: |
     # Site configuration
     # note: these key/values can also be used as substitutions.
