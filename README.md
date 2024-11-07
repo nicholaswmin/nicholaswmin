@@ -98,9 +98,11 @@ grab it from this repo [directly][download], or just `curl` it:
 curl -O https://raw.githubusercontent.com/nicholaswmin/nix/main/nix.rb
 ```
 
-apart from [Ruby 3.3][ruby], which probably came pre-installed on your system,
-there's nothing to install. You don't need to run `gem install`. 
-It's not available as a `gem` either; this is intentional.
+apart from [Ruby 3.3][ruby] there's nothing to install; 
+nor any commands to run. You don't need to run `gem install`. 
+It's not available as a `gem` either; 
+
+This is [intentional](#wheres-the-rest-of-it)
 
 ## Quirks
 
@@ -113,28 +115,37 @@ applicable to all static-site generators.
 
 this won't work:
 
-> bad : `<img src="/public/felix.svg"></img>`
-> bad : `<img src="/felix.svg"></img>`
+```html
+<img src="/public/felix.svg"></img>
+<img src="/felix.svg"></img>
+```
 
 use relative paths instead:
 
-> better: `<img src="../../felix.svg"></img>`
+```html
+<img src="../../felix.svg"></img>
+```
 
 even better, use `{{root_url)}`:
 
-> best: `<img src="{{root_url}}/felix.svg"></img>`
-> expands to: `<img src="../../felix.svg"></img>`
+```html
+<img src="{{root_path}}/felix.svg"></img>
+<!-- auto expands to <img src="../../felix.svg"></img> -->
+```
 
 it's rewritten automatically & resolves to the correct root regardless of 
-the page position.
+the page position, so it's less error-prone than manually writing relative   
+paths.
 
-> markdown example:
+> same in markdown:
 
 ```md
 [1]: {{root_url}}felix.svg
 ```
 
-### path resolution in code
+### root resolution in ruby
+
+> in case you're extending `nix`:
 
 `root_url` is also available as a method 
 which has the same effect:
@@ -144,7 +155,7 @@ root_url('felix.svg')
 # ../../felix.svg
 ```
 
-detailed example:
+more context:
 
 ```ruby
 class CustomPage < HTMLPage
@@ -156,6 +167,146 @@ class CustomPage < HTMLPage
   end
 end
 ```
+
+## Wheres the rest of it?
+
+> This project is actually part of a weekly workshop I was invited to do
+> in an SME. It's an actual project that you can use but it's primary purpose
+> was illustrative.
+
+The idea behind it closely mimics [wruby](https://wruby.passthejoe.net/about/),
+a static-site generator that generates [sites that are under 1kb][club].
+
+While the whole thing looks more like a code-golfing joke than anything 
+substantial, it's philosophy is based around serious ideas that emerged 
+in MIT and Berkley around the 80s(?), regarding software architecture design. 
+
+The 2 schools can be summed up up very easily if personified as caricatures.
+One is your laid-back cousin who slaps some tape on the broken window; 
+it more or less works. He then uses the time saved to get wasted at the bar.
+The end.
+
+Your other cousin wears turtlenecks and talks a lot about operas and ballets.
+This guy would be off the charts creepy on the sheer scale of his concocted 
+pretentiousness alone - the problem is that that the  20 hours he wasted on a 
+window-solution have produced an amazing looking window frame that looks as if 
+it was commisioned by a woodworking artist that's been solely devoted to his 
+craft for the past 30 years. 
+
+Despite their similarities. `wruby` is written entirely procedurally. 
+There is a clear *lack* of architecture and you can more or less describe it
+as a cooking recipe.
+
+This project rewrites its core ideas in an [Object-Oriented paradigm][oop], 
+but to avoid the irony of the entire argument, it's written with "care" not to 
+introduce excessive abstractions or any highly esoteric ideas from 
+object-orientation; it uses standard [polymorphism][polymor] and 
+[encapsulation][encapsulation] to express it's architecture; although OOP
+is taking some flack the past decade (or more?) from functional-programming,
+and rightfully so IMO; these 2 are not debatable characteristics of OOP, they
+are the most accepted ones.
+
+`nix` is using a lot of ideas supposedly considered "Best Practices".
+Data is moved around in a functional manner; the API is implemented in a fluent
+prose with clear hierarchical organisation into classes/types. Additionally,
+there's a clear and intentional separation of concerns between persistence code 
+and logic code; the purpose of this is to make it amerable to unit-testing.
+
+`wruby` has *absolutely none* of the above.  
+it's really just a bunch of functions glued together.   
+It's not possible to extend it without pulling out your hair. 
+
+With that being said, wruby is one of the few projects that I sat through 
+reading it's entire source-code without getting bored or distracted, because 
+it is just *that* simple.
+
+Both projects are written in Ruby.
+Both projects are based on material from the following essays:
+
+- [Worse is Better][worse-is-better], [Richard P. Gabriel][rpg)
+- [Is Worse Really Better?][worse-better], Richard P. Gabriel
+- [Locality of Behavior][loc-behavior], Carson Gross
+- [Chesterson's Fence: A lesson in thinking][chest-fence]
+
+From the Unix-Haters handbook    
+[Simson Garfinkel](https://en.wikipedia.org/wiki/Simson_Garfinkel)
+
+> [...] Literature that Unix succeeded because of its technical superiority. 
+> This is not true. Unix was evolutionarily superior to its competitors, 
+> but not technically superior. Unix became a commercial success because 
+> it was a virus. 
+> Its sole evolutionary advantage was its small size, simple design, and 
+> resulting portability.
+
+> ### From [Worse is Better vs The Right Thing][worse-is-better]  
+>
+> The New Jersey style of software architecture design    
+> vs the MIT/Stanford approach   
+>
+> [Richard P. Gabriel][rpg], 1991  
+>
+> [... ]I and just about every designer of Common Lisp and CLOS has
+> had extreme exposure to the MIT/Stanford style of design. 
+> The essence of this style can be captured by the phrase *The Right Thing*. 
+> To such a designer it is important to get all of the following characteristics 
+> right:
+>
+> #### Simplicity
+> the design must be simple, both in implementation and interface. 
+> It is more important for the interface to be simple than the implementation.
+>
+> #### Correctness 
+> The design must be correct in all observable aspects. Incorrectness is simply 
+> not allowed.
+>
+> #### Consistency
+> The design must not be inconsistent. 
+> A design is allowed to be slightly less simple and less complete to avoid 
+> inconsistency. Consistency is as important as correctness.
+>
+> #### Completeness
+> The design must cover as many important situations as is 
+> practical. All reasonably expected cases must be covered. 
+> Simplicity is not allowed to overly reduce completeness.
+>
+----
+> 
+> [...] The **Worse is Better** philosophy is only slightly different:
+>
+> #### Simplicity
+> The design must be simple, both in implementation and interface.  
+> It is more important for the implementation to be simple than the interface. 
+> Simplicity is the most important consideration in a design.
+>
+> #### Correctness 
+> The design must be correct in all observable aspects. 
+> It is slightly better to be simple than correct.
+>
+> #### Consistency
+> The design must not be overly inconsistent.   
+> Consistency can be sacrificed for simplicity in some cases, 
+> but it is better to drop those parts of the design that deal with 
+> less common circumstances than to introduce either implementational 
+> complexity or inconsistency.nt as correctness.
+>
+> #### Completeness
+>
+> Completeness -- the design must cover as many important situations as is 
+> practical. All reasonably expected cases should be covered. Completeness 
+> can be sacrificed in favor of any other quality. In fact, compzleteness must 
+> be sacrificed whenever implementation simplicity is jeopardized. 
+> Consistency can be sacrificed to achieve completeness if simplicity is 
+> retained; especially worthless is consistency of interface. 
+>
+> I have intentionally caricatured the worse-is-better philosophy to convince 
+> you that it is obviously a bad philosophy and that the New Jersey approach 
+> is a bad approach.
+>
+> [...] However, I believe that worse-is-better, even in its strawman form, has 
+> better survival characteristics than the-right-thing, and that 
+> the New Jersey approach when used for software is a better approach 
+> than the MIT approach[...]
+
 
 [nix]: https://github/com/nicholaswmin/nix
 [club]: https://1kb.club/
@@ -170,6 +321,14 @@ end
 [ruby]: https://ruby-doc.org/3.3.5/
 [download]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
 
+[oop]: https://en.wikipedia.org/wiki/Object-oriented_programming
+[loc-behavior]: https://curtsinger.cs.grinnell.edu/teaching/2021S1/CSC213/files/worse_is_better.pdf
+[worse-better]: https://dreamsongs.com/Files/IsWorseReallyBetter.pdf
+[worse-is-better]: https://curtsinger.cs.grinnell.edu/teaching/2021S1/CSC213/files/worse_is_better.pdf
+[rpg]: https://en.wikipedia.org/wiki/Richard_P._Gabriel
+[chest-fence]: https://fs.blog/chestertons-fence/
+[polymor]: https://en.wikipedia.org/wiki/Subtyping
+[encapsu]: https://en.wikipedia.org/wiki/Encapsulation_(computer_programming)
 <!---d
 ---
 # This YAML embed contains the necessary data 
@@ -458,111 +617,57 @@ end
     ... just like this post.
 
 - public/style.css: |
-    /* tweak this to your preference. */ 
-    
-    /* theme */
-    
     :root {
-      --bg-color: #fafafa; 
-      --bg-color-full: #fff;
-      --primary-color: #00695C;
-      --secondary-color: #3700B3;
-      --font-color: #555; 
-      --font-color-lighter: #777;
-      --font-color-lightest: #ccc;
-      --font-size: 14px; 
+      --fonts: Menlo, monospace;
+      --font-size: 100%; --font: #555; --font-light: #777; --font-lighter: #aaa;
+      --bg: #fafafa;  --primary: #00695C; --secondary: #3700B3;
     }
     
-    /* layout */
-    
-    * { 
-      font-family: monospace; font-size: var(--font-size);
-      font-weight:normal; text-decoration: none;
+     *, *:after, *:before { box-sizing: border-box; }
+     body::selection { background: #999; }
+
+    html {
+      font-family: var(--fonts); font-size: var(--font-size);
+      -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; 
+      line-height: 1.15;
     }
     
     body { 
-      /* must fit exactly 80-chars in code snippets */
-      max-width: 110ex; margin: 1em auto; padding: 0 1em;
-      background: var(--bg-color); color: var(--font-color); 
-      overflow-y: scroll;
-    }
-    body::selection { background: var(--font-color-lightest); }
-    main { padding: 1.5em 0; }
-    img { margin: 2em 0; max-width: 100%; }
-    
-    /* typography */
-    
-    p { padding: 1em 0; }
-    a { color: var(--primary-color); font-size: inherit; }
-    a:hover { color: var(--link-color-hover);  }
-    blockquote { font-style: italic; }
-    blockquote > p { display:inline; }
-    
-    h1, h2, h3, h4, h5, p, blockquote, pre { line-height: 1.5; padding: 0.5em 0; }
-    h1 { font-size: 1.75em; } h2 { font-size: 1.5em; } h3 { font-size: 1.25em;  }
-    h4, h4 *, small, small * { font-size: 0.9em; color: var(--font-color-lighter); }
-    h1, h2, h3 { margin: 1.5em 0 1em 0; }
-    h1, h2 { border-bottom: 1px solid var(--font-color-lightest); }
-    
-    /* lists */
-    
-    ul { 
-      display: block; padding-left: 1em; margin: 2em 0; list-style-type: '- ';
-      h1, h2, h3, h4, h5, h6 { margin: 0; padding: 0.25em 0; } 
-      h3 { color: var(--primary-color); }
-      li { margin: 1em 0; }
+      max-width: 90ex; margin: 0 auto; 
+      background: var(--bg-col); color: var(--font-col); overflow-y: scroll; 
     }
     
-    /* navigation */
-    
-    nav, footer {
-      padding: 1em 0;s
-      ul { display: block; margin: 0; padding-left: 0; }
-      li { display: inline-block; margin-right: 2em;  }
-      li a { color: var(--font-color); }
-      small { display: inline-block; margin-top: 2em; }
+    main { padding: 0;  margin: 0 auto; }
+    nav, footer { ul { display: block; margin: 0; padding-left: 0; }
+      li { display: inline-block; margin-right: 2em; a { color: var(--font-col); } }
+      small,li { display: inline-block; margin-top: 2em; }
     }
+
+    /* Typebase.css (avoid changing, they keep vertical rhythm) */
+    p { line-height: 1.5rem;  margin-top: 1.5rem; margin-bottom: 0; }
+    ul, ol { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+    ul li, ol li { line-height: 1.5rem; }
+    ul ul, ol ul, ul ol, ol ol { margin-top: 0;  margin-bottom: 0; }
+    blockquote { line-height: 1.5rem; margin-top: 1.5rem; margin-bottom: 1.5rem; }
     
-    /* printer */
+    h1,h2,h3,h4,h5,h6 { margin-top: 1.5rem; margin-bottom: 0; line-height: 1.5rem; }
+    h1 { font-size: 4.2421rem; line-height: 4.5rem; margin-top: 3rem; }
+    h2 { font-size: 2.8281rem; line-height: 3.1rem; margin-top: 3rem; }
+    h3 { font-size: 1.4114rem; } h4 { font-size: 0.7071rem; }
+    h5 { font-size: 0.4713rem; } h6 { font-size: 0.3535rem; }
     
-    @media print { 
-      body { width: auto; } 
-      nav, footer { display: none; }
-    }
+    table { margin-top: 1.5rem; border-spacing: 0px; border-collapse: collapse; }
+    table td, table th {  padding: 0; line-height: 33px; }
+    code { vertical-align: bottom; }
+    .lead { font-size: 1.414rem; }
+    .hug { margin-top: 0; }
     
-    /* post page */
-    
-    .post { 
-      h1:first-of-type, 
-      h2:first-of-type { margin-bottom: 0; }
-      code { 
-        padding: 2px 6px; border-radius: 0; font-size: 1em; 
-        background: var(--font-color-lightest); 
-      }
-      
-      pre {
-        font-size: 1.1em; padding: 2em; border-radius: 6px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24); word-wrap: break-word;
-        background: var(--bg-color-full);
-        code { 
-          display: block; background: var(--bg-color-full);
-          white-space: break-spaces; 
-        }
-      }
-          
-      blockquote { 
-        background: none;
-        border-left: 2px solid var(--font-color-lightest);
-        border-radius: 0; margin: 2em 0; padding: 1em; font-style: normal;
-        p { color: var(--font-color-lighter); }
-      }
-      
-      hr { 
-        margin: 2.5em 0 2.5em 0; border: 0.5px solid;
-        border-color: var(--font-color-lightest);
-      }
-    
-      .footnotes { margin-top: 2em; }
+    /* @nicholaswmin */
+    img { margin: 0; max-width: 100%; }
+    pre {
+      padding: 2em; border-radius: 6px; word-wrap: break-word;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24); word-wrap: break-word;
+      code {  white-space: break-spaces; }
     }
 
 - public/felix.svg: |
