@@ -13,7 +13,7 @@ nix  --watch           rebuild on file change
 ## quick start 
  
 - create a repo for your site, blog, whatever ...
-- copy/paste the drop the [nix.rb](#get-nix) file in it.
+- copy/paste the [nix.rb](#get-nix) file in it.
 
 then:
 
