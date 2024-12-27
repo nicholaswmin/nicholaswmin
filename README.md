@@ -10,19 +10,27 @@ nix  --build           build static HTML
 nix  --watch           rebuild on file change
 ```
 
-## quick start 
 
 nix is designed to be extremely simple and doesn't require installation or setup.  
-The steps are: 
+It publishes on [Github Pages][gh-pages] via [Github actions][gh-actions] which it automatically generates.
  
 1. create a Github repo 
 2. copy/paste the [nix.rb](#get-nix) file in it.
-3. write content
-4. push to `main` branch
+3. Run `--init`
+4. write content
+5. push to `main` branch
 
-that's it.
+which publishes a barebones site conforming to the philosophy found in [1kbclub.com](https://1kb.club/)
 
-then:
+## quick start 
+
+Say you have a repo with the following structure:
+
+
+`repo`  
+┣━`nix.rb`  
+┗━`README.md`
+
 
 > generate a minimal sample blog:
 
@@ -312,6 +320,7 @@ From the Unix-Haters handbook
 [ruby]: https://franzejr.github.io/best-ruby/
 [jekyll]: https://jekyllrb.com/
 [gh-pages]: https://pages.github.com/
+[gh-actions]: https://github.com/features/actions
 [gfm]: https://github.github.com/gfm/
 [rouge]: https://github.com/rouge-ruby/rouge
 [pygments]: https://pygments.org/
