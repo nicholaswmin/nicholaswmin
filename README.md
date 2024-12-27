@@ -17,10 +17,16 @@ It publishes on [Github Pages][gh-pages] via [Github actions][gh-actions] which 
 1. create a Github repo 
 2. copy/paste the [nix.rb](#get-nix) file in it.
 3. Run `--init` to generate a site structure
-4. write markdown in `posts/`
+4. write markdown in `posts/` and `pages/`
 5. push to `main` branch
 
 ... which publishes a barebones site consistent with the [1kb philosophy](https://1kb.club/)
+
+to publish new content
+
+1. write markdown in `posts/` and `pages/`
+2. push to `main` branch
+
 
 ## quick start 
 
