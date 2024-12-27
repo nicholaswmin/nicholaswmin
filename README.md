@@ -16,11 +16,11 @@ It publishes on [Github Pages][gh-pages] via [Github actions][gh-actions] which 
  
 1. create a Github repo 
 2. copy/paste the [nix.rb](#get-nix) file in it.
-3. Run `--init`
-4. write content
+3. Run `--init` to generate a site structure
+4. write markdown in `posts/`
 5. push to `main` branch
 
-which publishes a barebones site conforming to the philosophy found in [1kbclub.com](https://1kb.club/)
+... which publishes a barebones site consistent with the [1kb philosophy](https://1kb.club/)
 
 ## quick start 
 
