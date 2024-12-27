@@ -11,9 +11,16 @@ nix  --watch           rebuild on file change
 ```
 
 ## quick start 
+
+nix is designed to be extremely simple and doesn't require installation or setup.  
+The steps are: 
  
-- create a repo for your site, blog, whatever ...
-- copy/paste the [nix.rb](#get-nix) file in it.
+1. create a Github repo 
+2. copy/paste the [nix.rb](#get-nix) file in it.
+3. write content
+4. push to `main` branch
+
+that's it.
 
 then:
 
