@@ -1,6 +1,7 @@
 # nix
 
-> minimal static-site generator in 150 lines of [ruby][ruby]
+> a single-file, self-contained static site generator in 150 lines of [ruby][ruby]
+
 
 ```bash
 Usage: nix [options]
@@ -10,19 +11,17 @@ nix  --build           build static HTML
 nix  --watch           rebuild on file change
 ```
 
+## Publish a site
 
-nix is designed to be extremely simple and doesn't require installation or setup.  
-It publishes on [Github Pages][gh-pages] via [Github actions][gh-actions] which it automatically generates.
- 
-1. create a Github repo 
-2. copy/paste the [nix.rb](#get-nix) file in it.
-3. Run `--init` to generate a site structure
-4. write markdown in `posts/` and `pages/`
+1. create a Github repo with enabled pages.
+2. drop the [nix.rb](#get-nix) file in it.
+3. Run `--init` to generate a sample site
 5. push to `main` branch
 
-... which publishes a barebones site consistent with the [1kb philosophy](https://1kb.club/)
+... which publishes a barebones site consistent with the [1kb philosophy](https://1kb.club/) at: `<user>.github.io/<repo>`
 
-to publish new content
+### Publish new content
+
 
 1. write markdown in `posts/` and `pages/`
 2. push to `main` branch
