@@ -10,8 +10,8 @@
 
 publishes automatically on [Github Pages][gh-pages].
 
-Intentionally feature-poor & uncomplicated.
-A POC following the [New Jersey style][njs] of software architecture.
+An experimental POC, following the [New Jersey style][njs] school of thought,     
+so its intentionally feature-poor & uncomplicated.
 
 
 ```bash
