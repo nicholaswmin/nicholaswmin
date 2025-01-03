@@ -8,7 +8,11 @@
 > the site effortlessly by cloning the repository,
 > without going through complex installation instruction.
 
-publishes automatically on [Github Pages][gh-pages]
+publishes automatically on [Github Pages][gh-pages].
+
+Intentionally feature-poor & uncomplicated.
+A POC following the [New Jersey style][njs] of software architecture.
+
 
 ```bash
 Usage: nix [options]
@@ -342,6 +346,7 @@ From the Unix-Haters handbook
 [download]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
 
 [oop]: https://en.wikipedia.org/wiki/Object-oriented_programming
+[njs]: https://en.wikipedia.org/wiki/Worse_is_better
 [loc-behavior]: https://curtsinger.cs.grinnell.edu/teaching/2021S1/CSC213/files/worse_is_better.pdf
 [worse-better]: https://dreamsongs.com/Files/IsWorseReallyBetter.pdf
 [worse-is-better]: https://curtsinger.cs.grinnell.edu/teaching/2021S1/CSC213/files/worse_is_better.pdf
