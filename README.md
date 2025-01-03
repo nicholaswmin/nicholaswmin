@@ -1,7 +1,14 @@
-# nix
+> Instead of installing `X`/`Y` framework, 
 
-> a single-file, self-contained static site generator in 150 lines of [ruby][ruby]
+- create a repository
+- copy this single-file "framework" into it
+- write markdown and `git push`
 
+> Anyone with access to the repository can publish
+> the site effortlessly by cloning the repository,
+> without going through complex installation instruction.
+
+publishes automatically on [Github Pages][gh-pages]
 
 ```bash
 Usage: nix [options]
@@ -15,7 +22,7 @@ nix  --watch           rebuild on file change
 
 1. create a Github repo with enabled pages.
 2. drop the [nix.rb](#get-nix) file in it.
-3. Run `--init` to generate a sample site
+3. Run `ruby nix.rb --init` to generate a sample site
 5. push to `main` branch
 
 ... which publishes a barebones site consistent with the [1kb philosophy](https://1kb.club/) at: `<user>.github.io/<repo>`
