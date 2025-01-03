@@ -1,17 +1,26 @@
-> Instead of installing `X`/`Y` framework, 
+> is a single-file static-site generator in 150 lines of [ruby][ruby]
+> 
+> It's paramount design goal is to be **simple**, as in:   
+> simple to understand, modify, install, use, extend & so on...
+
+Instead of going through a complex process of installing `X`/`Y` framework:
 
 - create a repository
 - copy this single-file "framework" into it
-- write markdown and `git push`
+- run `ruby nix.rb --init`
+- add posts & pages [gh-markdown][mdown]
+- `git push`
 
-> Anyone with access to the repository can publish
-> the site effortlessly by cloning the repository,
-> without going through complex installation instruction.
+which publishes automatically on [Github Pages][gh-pages].
 
-publishes automatically on [Github Pages][gh-pages].
+Anyone with access to the reposiniitory can then publish effortlessly
+by cloning the repository, without going through complex setup instruction.
 
-An experimental POC, following the [New Jersey style][njs] school of thought,     
-so its intentionally feature-poor & uncomplicated.
+**rationale:** This POC is based on the unconventional [New Jersey][njs] school of thought,  
+which posits that simplicity of design, architecture and implementation is not   
+only equally important but *even more important* than correctness.  
+
+Therefore its intentionally feature-poor & uncomplicated; 
 
 
 ```bash
