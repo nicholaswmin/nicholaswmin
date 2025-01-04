@@ -1,27 +1,21 @@
 > is a single-file static-site generator in 150 lines of [ruby][ruby]
-> 
-> It's paramount design goal is to be **simple**, as in:   
-> simple to understand, modify, install, use, extend & so on...
 
-Instead of going through a complex process of installing `X`/`Y` framework:
+> It's distinguishing characteristic is the unconventional idea  
+> of primariy emphasizing *simplicity*, even more so than *program correctness*.  
+> read more: [The New Jersey style/Worse is Better][njs]
 
-- create a repository
-- copy this single-file "framework" into it
-- run `ruby nix.rb --init`
-- add posts & pages [gh-markdown][mdown]
+Instead of going through a process of installing `X`/`Y` framework on your system,   
+it inverts the process by including the "framework" within the site it publishes.
+
+- create a repo & drop `nix.rb` into it
+- run `nix.rb --init`
+- add posts & pages as [markdown][gfm]
 - `git push`
 
-which publishes automatically on [Github Pages][gh-pages].
+... which publishes automatically on [Github Pages][gh-pages].
 
-Anyone with access to the reposiniitory can then publish effortlessly
-by cloning the repository, without going through complex setup instruction.
-
-**rationale:** This POC is based on the unconventional [New Jersey][njs] school of thought,  
-which posits that simplicity of design, architecture and implementation is not   
-only equally important but *even more important* than correctness.  
-
-Therefore its intentionally feature-poor & uncomplicated; 
-
+anyone with repository access can edit/publish the site by simply cloning the repo,  
+add/edit posts and re-pushing to `main`.
 
 ```bash
 Usage: nix [options]
@@ -30,6 +24,11 @@ nix  --init            create sample blog
 nix  --build           build static HTML
 nix  --watch           rebuild on file change
 ```
+
+## todo
+
+- [ ] docs
+- [ ] unit tests
 
 ## Publish a site
 
