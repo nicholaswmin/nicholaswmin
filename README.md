@@ -4,8 +4,8 @@
 > of primariy emphasizing *simplicity*, even more so than *program correctness*.  
 > read more: [The New Jersey style/Worse is Better][njs]
 
-Instead of going through a process of installing `X`/`Y` framework on your system,   
-it inverts the process by including the "framework" within the site it publishes.
+Instead of installing `X`/`Y`  publishing framework on your system,   
+it inverts the process by embedding the "framework" in the site itself.
 
 - create a repo & drop `nix.rb` into it
 - run `nix.rb --init`
