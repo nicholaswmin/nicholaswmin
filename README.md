@@ -1,4 +1,4 @@
-> is a single-file static-site generator in 150 lines of [ruby][ruby]
+> is a single-file static-site generator in 150 lines of [ruby][ruby] [WIP]
 
 > It's distinguishing characteristic is that it's archicture   
 > & system design philosophy (over)emphasizes [*simplicity*][kiss] to an unsual degree,    
@@ -17,6 +17,11 @@ it inverts the process by embedding the "framework" in the site itself.
 - `git push`
 
 ... which publishes automatically on [Github Pages][gh-pages].
+
+### todo 
+- [ ] unit tests
+- [ ] data should be pruned outside of this readme
+- [ ] code docs
 
 anyone with repository access can edit/publish the site by simply cloning the repo,  
 add/edit posts and re-pushing to `main`.
