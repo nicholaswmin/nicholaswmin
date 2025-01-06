@@ -4,8 +4,10 @@
 > & system design philosophy (over)emphasizes [*simplicity*][kiss] to an unsual degree,    
 > even more so than *program correctness*. 
 >
-> Read more: [The New Jersey style/Worse is Better][njs] by Richard Gabrielle
-> 
+> Read more:
+> - [The New Jersey style/Worse is Better][njs] by Richard Gabrielle
+> - [Locality of Behaviour][lob], Carson Gross
+
 Instead of installing `X`/`Y`  publishing framework on your system,   
 it inverts the process by embedding the "framework" in the site itself.
 
@@ -259,7 +261,7 @@ Both projects are based on material from the following essays:
 
 - [Worse is Better][worse-is-better], [Richard P. Gabriel][rpg]
 - [Is Worse Really Better?][worse-better], Richard P. Gabriel
-- [Locality of Behavior][loc-behavior], Carson Gross
+- [Locality of Behavior][loc], Carson Gross
 - [Chesterson's Fence: A lesson in thinking][chest-fence]
 
 From the Unix-Haters handbook    
@@ -357,7 +359,7 @@ From the Unix-Haters handbook
 [kiss]: https://en.wikipedia.org/wiki/KISS_principle#In_software_development
 [oop]: https://en.wikipedia.org/wiki/Object-oriented_programming
 [njs]: https://en.wikipedia.org/wiki/Worse_is_better
-[loc-behavior]: https://curtsinger.cs.grinnell.edu/teaching/2021S1/CSC213/files/worse_is_better.pdf
+[lob]: https://htmx.org/essays/locality-of-behaviour
 [worse-better]: https://dreamsongs.com/Files/IsWorseReallyBetter.pdf
 [worse-is-better]: https://curtsinger.cs.grinnell.edu/teaching/2021S1/CSC213/files/worse_is_better.pdf
 [rpg]: https://en.wikipedia.org/wiki/Richard_P._Gabriel
