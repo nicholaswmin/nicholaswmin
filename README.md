@@ -1,9 +1,11 @@
 > is a single-file static-site generator in 150 lines of [ruby][ruby]
 
-> It's distinguishing characteristic is the unconventional idea  
-> of primariy emphasizing *simplicity*, even more so than *program correctness*.  
-> read more: [The New Jersey style/Worse is Better][njs]
-
+> It's distinguishing characteristic is that it's archicture   
+> & system design philosophy (over)emphasizes [*simplicity*][kiss] to an unsual degree,    
+> even more so than *program correctness*. 
+>
+> Read more: [The New Jersey style/Worse is Better][njs] by Richard Gabrielle
+> 
 Instead of installing `X`/`Y`  publishing framework on your system,   
 it inverts the process by embedding the "framework" in the site itself.
 
@@ -352,7 +354,7 @@ From the Unix-Haters handbook
 [fi-join]: https://ruby-doc.org/3.3.2/File.html#method-c-join
 [ruby]: https://ruby-doc.org/3.3.5/
 [download]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
-
+[kiss]: https://en.wikipedia.org/wiki/KISS_principle#In_software_development
 [oop]: https://en.wikipedia.org/wiki/Object-oriented_programming
 [njs]: https://en.wikipedia.org/wiki/Worse_is_better
 [loc-behavior]: https://curtsinger.cs.grinnell.edu/teaching/2021S1/CSC213/files/worse_is_better.pdf
