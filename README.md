@@ -6,6 +6,10 @@
 > (over)emphasizes [simplicity][kiss] to an unsual degree;
 > even more that [program correctness][corr]
 >
+> Read more:
+> - [The New Jersey style/Worse is Better][njs] by Richard Gabrielle, MIT
+> - [Locality of Behaviour][lob]: Carson Gross
+>
 > It aims to balance 3 competing requirements:
 > 
 > - it must be extemely easy to make sense of
@@ -18,11 +22,6 @@
 > - [ ] tests
 > - [ ] cleanup
 > - [ ] docs
->
->
-> Read more:
-> - [The New Jersey style/Worse is Better][njs] by Richard Gabrielle
-> - [Locality of Behaviour][lob], Carson Gross
 
 Instead of installing `X`/`Y`  publishing framework on your system,   
 it inverts the process by embedding the "framework" in the site itself.
