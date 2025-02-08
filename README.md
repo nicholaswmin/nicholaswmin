@@ -1,8 +1,24 @@
-> is a single-file static-site generator in 150 lines of [ruby][ruby] [WIP]
+> is a single-file static-site generator in 150 lines of [ruby][ruby]
 
-> It's distinguishing characteristic is that it's archicture   
-> & system design philosophy (over)emphasizes [*simplicity*][kiss] to an unsual degree,    
-> even more so than *program correctness*. 
+> although nix is fully-working framework, it was written as a proof-of-concept
+> 
+> It's distinguishing characteristic is that it's archicture & system design philosophy  
+> (over)emphasizes [simplicity][kiss] to an unsual degree;
+> even more that [program correctness][corr]
+>
+> It aims to balance 3 competing requirements:
+> 
+> - it must be extemely easy to make sense of
+> - it must actually allow publishing a site
+> - it must be extremely easy to setup
+> - it must be extemely easy to make sense of
+> - it must follow conventions to a certain degree
+>
+> ## todo
+> - [ ] tests
+> - [ ] cleanup
+> - [ ] docs
+>
 >
 > Read more:
 > - [The New Jersey style/Worse is Better][njs] by Richard Gabrielle
@@ -362,6 +378,7 @@ From the Unix-Haters handbook
 [ruby]: https://ruby-doc.org/3.3.5/
 [download]: https://github.com/nicholaswmin/nix/blob/main/nix.rb
 [kiss]: https://en.wikipedia.org/wiki/KISS_principle#In_software_development
+[corr]: https://en.wikipedia.org/wiki/Correctness_(computer_science)
 [oop]: https://en.wikipedia.org/wiki/Object-oriented_programming
 [njs]: https://en.wikipedia.org/wiki/Worse_is_better
 [lob]: https://htmx.org/essays/locality-of-behaviour
